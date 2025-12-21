@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"log"
+
+	"github.com/reche13/habitum/internal/config"
+)
 
 func main() {
-	fmt.Println("Habitum")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(cfg.Server.Port)
 }
