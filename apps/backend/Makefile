@@ -14,13 +14,13 @@ tidy:
 	go mod verify
 
 migrate-up:
-	goose -dir $(MIGRATIONS_DIR) postgres $$DATABASE_URL up
+	goose -dir $(MIGRATIONS_DIR) postgres up
 
 migrate-down:
-	goose -dir $(MIGRATIONS_DIR) postgres $$DATABASE_URL down
+	goose -dir $(MIGRATIONS_DIR) postgres down
 
 migrate-status:
-	goose -dir $(MIGRATIONS_DIR) postgres $$DATABASE_URL status
+	goose -dir $(MIGRATIONS_DIR) postgres status
 
 migrate-create:
 ifeq ($(strip $(name)),)
