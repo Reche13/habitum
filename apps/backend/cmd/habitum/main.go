@@ -18,7 +18,10 @@ func main() {
 			Msg("failed to load config")
 	}
 
-	srv := server.New(cfg, log)
+	srv, err := server.New(cfg, log)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize server")
+	}
 
 	h := handler.NewHandlers(srv)
 	r := router.NewRouter(h)
