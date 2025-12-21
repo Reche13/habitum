@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -10,25 +9,16 @@ import (
 )
 
 type HealthHandler struct {
-	Handler
+	server *server.Server
 }
 
 func NewHealthHandler(s *server.Server) *HealthHandler {
-	return &HealthHandler{
-		Handler: NewHandler(s),
-	}
+	return &HealthHandler{server: s}
 }
 
 func (h *HealthHandler) CheckHealth(c echo.Context) error {
-	response := map[string]interface{}{
-		"status":      "healthy",
-		"timestamp":   time.Now().UTC(),
-	}
-
-	err := c.JSON(http.StatusOK, response)
-	if err != nil {
-		return fmt.Errorf("failed to write JSON response: %w", err)
-	}
-
-	return nil
+	return c.JSON(http.StatusOK, map[string]any{
+		"status":    "healthy",
+		"timestamp": time.Now().UTC(),
+	})
 }
