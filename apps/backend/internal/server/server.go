@@ -1,31 +1,40 @@
 package server
 
 import (
-	"github.com/labstack/echo/v4"
+	"errors"
+	"net/http"
+
 	"github.com/reche13/habitum/internal/config"
 	"github.com/rs/zerolog"
 )
 
 type Server struct {
-	log zerolog.Logger
-	echo *echo.Echo
-	port string
+	Config *config.Config
+	Logger zerolog.Logger
+	httpServer *http.Server
 }
 
-func New(cfg *config.ServerConfig, log zerolog.Logger) *Server {
-	e := echo.New()
-
+func New(cfg *config.Config, logger zerolog.Logger) *Server {
 	return &Server{
-		log: log,
-		echo: e,
-		port: cfg.Port,
+		Logger: logger,
+		Config: cfg,
 	}
 }
 
-func (s *Server) Start() error {
-	s.log.Info().
-		Str("port", s.port).
-		Msg("starting HTTP server")
+func (s *Server) SetupHTTPServer(handler http.Handler) {
+	s.httpServer = &http.Server{
+		Addr: ":" + s.Config.Server.Port,
+		Handler: handler,
+	}
+}
 
-	return s.echo.Start(":" + s.port)
+
+func (s *Server) Start() error {
+	if s.httpServer == nil {
+		return errors.New("HTTP server not initialized")
+	}
+
+	s.Logger.Info().Str("post", s.Config.Server.Port).Msg("starting server")
+
+	return s.httpServer.ListenAndServe()
 }
