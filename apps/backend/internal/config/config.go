@@ -25,9 +25,9 @@ type DatabaseConfig struct {
 
 
 func Load() (*Config, error) {
-	k := koanf.New(".")
+	k := koanf.New("_")
 
-	err := k.Load(env.Provider("HABITUM_", ".", func(s string) string {
+	err := k.Load(env.Provider("HABITUM_", "_", func(s string) string {
 		return strings.ToLower(strings.TrimPrefix(s, "HABITUM_"))
 	}), nil)
 	if err != nil {
