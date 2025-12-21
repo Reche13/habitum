@@ -1,16 +1,24 @@
 package main
 
 import (
-	"log"
-
 	"github.com/reche13/habitum/internal/config"
+	"github.com/reche13/habitum/internal/logger"
 )
 
 func main() {
+	log := logger.New()
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().
+			Err(err).
+			Msg("failed to load config")
 	}
 
-	log.Println(cfg.Server.Port)
+	log.Info().
+		Str("port", cfg.Server.Port).
+		Msg("starting habitum backend")
+
+	log.Debug().
+		Msg("debug logging is enabled")
 }
