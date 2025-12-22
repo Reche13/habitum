@@ -9,5 +9,9 @@ func NewRouter(handler *handler.Handlers) *echo.Echo {
 	router := echo.New()
 
 	registerSystemRoutes(router, handler)
+
+	router.POST("/users", handler.User.CreateUser)
+	router.GET("/users", handler.User.GetUsers)
+	
 	return router
 }

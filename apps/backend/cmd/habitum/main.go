@@ -4,8 +4,10 @@ import (
 	"github.com/reche13/habitum/internal/config"
 	"github.com/reche13/habitum/internal/handler"
 	"github.com/reche13/habitum/internal/logger"
+	"github.com/reche13/habitum/internal/repository"
 	"github.com/reche13/habitum/internal/router"
 	"github.com/reche13/habitum/internal/server"
+	"github.com/reche13/habitum/internal/service"
 )
 
 func main() {
@@ -22,8 +24,9 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize server")
 	}
-
-	h := handler.NewHandlers(srv)
+	repo := repository.NewRepositories(srv.DB.Pool)
+	s := service.NewUserService(srv, repo.User)
+	h := handler.NewHandlers(srv, s)
 	r := router.NewRouter(h)
 
 	srv.SetupHTTPServer(r)
