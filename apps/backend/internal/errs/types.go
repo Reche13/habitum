@@ -1,68 +1,39 @@
 package errs
 
 import (
-	"net/http"
+	"strings"
 )
 
-func NewUnauthorizedError(message string, override bool) *HTTPError {
+type FieldError struct {
+	Field string `json:"field"`
+	Error string `json:"error"`
+}
+
+type HTTPError struct {
+	Code    string       `json:"code"`
+	Message string       `json:"message"`
+	Status  int          `json:"status"`
+	Fields  []FieldError `json:"fields,omitempty"` // Only for validation errors
+}
+
+func (e *HTTPError) Error() string {
+	return e.Message
+}
+
+func (e *HTTPError) Is(target error) bool {
+	_, ok := target.(*HTTPError)
+	return ok
+}
+
+func (e *HTTPError) WithMessage(message string) *HTTPError {
 	return &HTTPError{
-		Code:     MakeUpperCaseWithUnderscores(http.StatusText(http.StatusUnauthorized)),
-		Message:  message,
-		Status:   http.StatusUnauthorized,
-		Override: override,
+		Code:    e.Code,
+		Message: message,
+		Status:  e.Status,
+		Fields:  e.Fields,
 	}
 }
 
-func NewForbiddenError(message string, override bool) *HTTPError {
-	return &HTTPError{
-		Code:     MakeUpperCaseWithUnderscores(http.StatusText(http.StatusForbidden)),
-		Message:  message,
-		Status:   http.StatusForbidden,
-		Override: override,
-	}
-}
-
-func NewBadRequestError(message string, override bool, code *string, errors []FieldError, action *Action) *HTTPError {
-	formattedCode := MakeUpperCaseWithUnderscores(http.StatusText(http.StatusBadRequest))
-
-	if code != nil {
-		formattedCode = *code
-	}
-
-	return &HTTPError{
-		Code:     formattedCode,
-		Message:  message,
-		Status:   http.StatusBadRequest,
-		Override: override,
-		Errors:   errors,
-		Action:   action,
-	}
-}
-
-func NewNotFoundError(message string, override bool, code *string) *HTTPError {
-	formattedCode := MakeUpperCaseWithUnderscores(http.StatusText(http.StatusNotFound))
-
-	if code != nil {
-		formattedCode = *code
-	}
-
-	return &HTTPError{
-		Code:     formattedCode,
-		Message:  message,
-		Status:   http.StatusNotFound,
-		Override: override,
-	}
-}
-
-func NewInternalServerError() *HTTPError {
-	return &HTTPError{
-		Code:     MakeUpperCaseWithUnderscores(http.StatusText(http.StatusInternalServerError)),
-		Message:  http.StatusText(http.StatusInternalServerError),
-		Status:   http.StatusInternalServerError,
-		Override: false,
-	}
-}
-
-func ValidationError(err error) *HTTPError {
-	return NewBadRequestError("Validation failed: "+err.Error(), false, nil, nil, nil)
+func MakeUpperCaseWithUnderscores(str string) string {
+	return strings.ToUpper(strings.ReplaceAll(str, " ", "_"))
 }

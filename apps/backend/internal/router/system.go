@@ -5,6 +5,7 @@ import (
 	"github.com/reche13/habitum/internal/handler"
 )
 
-func registerSystemRoutes(r *echo.Echo, h *handler.Handlers) {
-	r.GET("/status", h.Health.CheckHealth)
+func registerSystemRoutes(e *echo.Echo, h *handler.Handlers) {
+	e.GET("/health", h.Health.CheckHealth)
+	e.GET("/status", h.Health.CheckHealth)
 }

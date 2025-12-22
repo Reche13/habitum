@@ -1,77 +1,82 @@
 package service
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/reche13/habitum/internal/errs"
-	"github.com/reche13/habitum/internal/model"
+	"context"
+
+	"github.com/google/uuid"
 	"github.com/reche13/habitum/internal/model/user"
 	"github.com/reche13/habitum/internal/repository"
-	"github.com/reche13/habitum/internal/server"
 )
 
 type UserService struct {
-	server  *server.Server
 	userRepo *repository.UserRepository
 }
 
 func NewUserService(
-	server *server.Server,
 	userRepo *repository.UserRepository,
 ) *UserService {
 	return &UserService{
-		server:   server,
 		userRepo: userRepo,
 	}
 }
 
+
 func (s *UserService) CreateUser(
-	ctx echo.Context,
+	ctx context.Context,
 	payload *user.CreateUserPayload,
 ) (*user.User, error) {
-	if payload.Name == "" {
-		s.server.Logger.Warn().Msg("user creation failed: name is empty")
-		return nil, errs.NewBadRequestError(
-			"name is required",
-			false, nil, nil, nil,
-		)
-	}
-
-	if payload.Email == "" {
-		s.server.Logger.Warn().Msg("user creation failed: email is empty")
-		return nil, errs.NewBadRequestError(
-			"email is required",
-			false, nil, nil, nil,
-		)
-	}
-
-	createdUser, err := s.userRepo.Create(
-		ctx.Request().Context(),
-		payload,
-	)
+	createdUser, err := s.userRepo.Create(ctx, payload)
 	if err != nil {
-		s.server.Logger.Error().Err(err).Msg("failed to create user")
 		return nil, err
 	}
-
-	s.server.Logger.Info().
-		Str("event", "user_created").
-		Str("user_id", createdUser.ID.String()).
-		Str("email", createdUser.Email).
-		Msg("User created successfully")
 
 	return createdUser, nil
 }
 
-
-func (s *UserService) GetUsers(
-	ctx echo.Context,
-) (*model.PaginatedResponse[user.User], error) {
-
-	users, err := s.userRepo.List(ctx.Request().Context())
+func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*user.User, error) {
+	u, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		s.server.Logger.Error().Err(err).Msg("failed to fetch users")
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func (s *UserService) GetUsers(ctx context.Context) ([]user.User, error) {
+	users, err := s.userRepo.List(ctx)
+	if err != nil {
 		return nil, err
 	}
 
 	return users, nil
+}
+
+func (s *UserService) UpdateUser(
+	ctx context.Context,
+	id uuid.UUID,
+	payload *user.UpdateUserPayload,
+) (*user.User, error) {
+	_, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedUser, err := s.userRepo.Update(ctx, id, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
+}
+
+func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := s.userRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+	return nil
 }

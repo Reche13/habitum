@@ -21,3 +21,4 @@ func New() zerolog.Logger {
 		Timestamp().
 		Logger()
 }
+

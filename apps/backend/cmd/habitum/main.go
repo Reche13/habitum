@@ -24,12 +24,13 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize server")
 	}
-	repo := repository.NewRepositories(srv.DB.Pool)
-	s := service.NewUserService(srv, repo.User)
-	h := handler.NewHandlers(srv, s)
-	r := router.NewRouter(h)
 
-	srv.SetupHTTPServer(r)
+	repositories := repository.NewRepositories(srv.DB.Pool)
+	services := service.NewServices(repositories)
+	handlers := handler.NewHandlers(services)
+	router := router.NewRouter(srv.Logger, handlers)
+
+	srv.SetupHTTPServer(router)
 
 	if err := srv.Start(); err != nil {
 		log.Fatal().Err(err).Msg("server stopped")

@@ -1,18 +1,15 @@
 package handler
 
-import (
-	"github.com/reche13/habitum/internal/server"
-	"github.com/reche13/habitum/internal/service"
-)
+import "github.com/reche13/habitum/internal/service"
 
 type Handlers struct {
 	Health *HealthHandler
-	User *UserHandler
+	User   *UserHandler
 }
 
-func NewHandlers(s *server.Server, service *service.UserService) *Handlers {
+func NewHandlers(services *service.Services) *Handlers {
 	return &Handlers{
-		Health: NewHealthHandler(s),
-		User: NewUserHandler(s, service),
+		Health: NewHealthHandler(),
+		User:   NewUserHandler(services.User),
 	}
 }

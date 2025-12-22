@@ -5,15 +5,12 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/reche13/habitum/internal/server"
 )
 
-type HealthHandler struct {
-	server *server.Server
-}
+type HealthHandler struct{}
 
-func NewHealthHandler(s *server.Server) *HealthHandler {
-	return &HealthHandler{server: s}
+func NewHealthHandler() *HealthHandler {
+	return &HealthHandler{}
 }
 
 func (h *HealthHandler) CheckHealth(c echo.Context) error {
