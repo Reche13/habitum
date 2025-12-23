@@ -8,4 +8,7 @@ import (
 func RegisterAPIV1Routes(api *echo.Group, h *handler.Handlers) {
 	users := api.Group("/users")
 	registerUserRoutes(users, h)
+	
+	habits := api.Group("/habits")
+	registerHabitRoutes(habits, h)
 }

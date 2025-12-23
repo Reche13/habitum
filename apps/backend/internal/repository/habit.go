@@ -54,8 +54,7 @@ func (r *HabitRepository) Create(ctx context.Context, userID uuid.UUID, payload 
 	return &h, nil
 }
 
-
-func (r *HabitRepository) List(ctx context.Context, userID uuid.UUID) ([]*habit.Habit, error) {
+func (r *HabitRepository) List(ctx context.Context, userID uuid.UUID) ([]habit.Habit, error) {
 	stmt := `
 		SELECT
 			*
@@ -73,13 +72,13 @@ func (r *HabitRepository) List(ctx context.Context, userID uuid.UUID) ([]*habit.
 		return nil, err
 	}
 
-	habits, err := pgx.CollectRows(rows, pgx.RowToStructByName[*habit.Habit])
+	habits, err := pgx.CollectRows(rows, pgx.RowToStructByName[habit.Habit])
 	if err != nil {
 		return nil, err
 	}
 
 	if habits == nil {
-		return []*habit.Habit{}, nil
+		return []habit.Habit{}, nil
 	}
 
 	return habits, nil
