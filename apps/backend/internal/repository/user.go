@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/reche13/habitum/internal/model/user"
-	"github.com/reche13/habitum/internal/sqlerr"
 )
 
 type UserRepository struct {
@@ -43,12 +42,12 @@ func (r *UserRepository) Create(
 		"email": payload.Email,
 	})
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	return &u, nil
@@ -68,12 +67,12 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*user.User,
 		"id": id,
 	})
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	return &u, nil
@@ -92,12 +91,12 @@ func (r *UserRepository) List(ctx context.Context) ([]user.User, error) {
 
 	rows, err := r.db.Query(ctx, stmt)
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[user.User])
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	if users == nil {
@@ -147,12 +146,12 @@ func (r *UserRepository) Update(ctx context.Context, id uuid.UUID, payload *user
 
 	rows, err := r.db.Query(ctx, stmt, args)
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
 	if err != nil {
-		return nil, sqlerr.HandleError(err)
+		return nil, err
 	}
 
 	return &u, nil
@@ -168,7 +167,7 @@ func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		"id": id,
 	})
 	if err != nil {
-		return sqlerr.HandleError(err)
+		return err
 	}
 
 	return nil

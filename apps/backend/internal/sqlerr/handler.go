@@ -9,7 +9,31 @@ import (
 	"github.com/reche13/habitum/internal/errs"
 )
 
-func HandleError(err error) error {
+type DatabaseError struct {
+	ResourceName string
+	Err          error
+}
+
+func (e *DatabaseError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *DatabaseError) Unwrap() error {
+	return e.Err
+}
+
+
+func WrapError(err error, resourceName string) error {
+	if err == nil {
+		return nil
+	}
+	return &DatabaseError{
+		ResourceName: resourceName,
+		Err:          err,
+	}
+}
+
+func HandleError(err error, resourceName string) error {
 	if err == nil {
 		return nil
 	}
@@ -20,10 +44,10 @@ func HandleError(err error) error {
 	}
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return errs.NewNotFoundError("Resource not found")
+		return errs.NewNotFoundError(fmt.Sprintf("%s not found", resourceName))
 	}
 
-	return fmt.Errorf("database error: %w", err)
+	return errs.NewInternalServerError(fmt.Sprintf("Database error: %v", err))
 }
 
 func handlePostgresError(pgErr *pgconn.PgError) error {
@@ -41,7 +65,28 @@ func handlePostgresError(pgErr *pgconn.PgError) error {
 	case "42703": // undefined_column
 		return errs.NewInternalServerError("Database schema error")
 	default:
-		return fmt.Errorf("database error: %s", pgErr.Message)
+		return errs.NewInternalServerError(fmt.Sprintf("Database error: %s", pgErr.Message))
 	}
 }
 
+
+func IsDatabaseError(err error) bool {
+	if err == nil {
+		return false
+	}
+	
+	var dbErr *DatabaseError
+	if errors.As(err, &dbErr) {
+		return true
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return true
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return true
+	}
+
+	return false
+}

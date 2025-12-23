@@ -9,6 +9,7 @@ import (
 )
 
 type UserService struct {
+	*BaseService
 	userRepo *repository.UserRepository
 }
 
@@ -16,6 +17,9 @@ func NewUserService(
 	userRepo *repository.UserRepository,
 ) *UserService {
 	return &UserService{
+		BaseService: &BaseService{
+			resourceName: "user",
+		},
 		userRepo: userRepo,
 	}
 }
@@ -27,7 +31,7 @@ func (s *UserService) CreateUser(
 ) (*user.User, error) {
 	createdUser, err := s.userRepo.Create(ctx, payload)
 	if err != nil {
-		return nil, err
+		return nil, s.wrapError(err)
 	}
 
 	return createdUser, nil
@@ -36,7 +40,7 @@ func (s *UserService) CreateUser(
 func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*user.User, error) {
 	u, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, s.wrapError(err)
 	}
 
 	return u, nil
@@ -45,7 +49,7 @@ func (s *UserService) GetUser(ctx context.Context, id uuid.UUID) (*user.User, er
 func (s *UserService) GetUsers(ctx context.Context) ([]user.User, error) {
 	users, err := s.userRepo.List(ctx)
 	if err != nil {
-		return nil, err
+		return nil, s.wrapError(err)
 	}
 
 	return users, nil
@@ -58,12 +62,12 @@ func (s *UserService) UpdateUser(
 ) (*user.User, error) {
 	_, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, s.wrapError(err)
 	}
 
 	updatedUser, err := s.userRepo.Update(ctx, id, payload)
 	if err != nil {
-		return nil, err
+		return nil, s.wrapError(err)
 	}
 
 	return updatedUser, nil
@@ -72,11 +76,11 @@ func (s *UserService) UpdateUser(
 func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	_, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
-		return err
+		return s.wrapError(err)
 	}
 
 	if err := s.userRepo.Delete(ctx, id); err != nil {
-		return err
+		return s.wrapError(err)
 	}
 	return nil
 }
