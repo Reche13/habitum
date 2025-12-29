@@ -137,3 +137,89 @@ func (r *HabitLogRepository) GetByHabit(
 
 	return pgx.CollectRows(rows, pgx.RowToStructByName[habitlog.HabitLog])
 }
+
+func (r *HabitLogRepository) DeleteByHabitAndDate(
+	ctx context.Context,
+	userID uuid.UUID,
+	habitID uuid.UUID,
+	logDate time.Time,
+) error {
+	stmt := `
+		DELETE FROM habit_logs
+		WHERE user_id = @user_id
+			AND habit_id = @habit_id
+			AND log_date = @log_date
+	`
+
+	_, err := r.db.Exec(ctx, stmt, pgx.NamedArgs{
+		"user_id":  userID,
+		"habit_id": habitID,
+		"log_date": logDate,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *HabitLogRepository) GetByHabitWithLimit(
+	ctx context.Context,
+	userID uuid.UUID,
+	habitID uuid.UUID,
+	from time.Time,
+	to time.Time,
+	limit int,
+) ([]habitlog.HabitLog, int, error) {
+	// Get total count
+	countStmt := `
+		SELECT COUNT(*)
+		FROM habit_logs
+		WHERE user_id = @user_id
+			AND habit_id = @habit_id
+			AND log_date BETWEEN @from AND @to
+			AND completed = true
+	`
+
+	var total int
+	err := r.db.QueryRow(ctx, countStmt, pgx.NamedArgs{
+		"user_id":  userID,
+		"habit_id": habitID,
+		"from":     from,
+		"to":       to,
+	}).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get logs with limit
+	stmt := `
+		SELECT *
+		FROM habit_logs
+		WHERE user_id = @user_id
+			AND habit_id = @habit_id
+			AND log_date BETWEEN @from AND @to
+			AND completed = true
+		ORDER BY log_date DESC
+		LIMIT @limit
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"user_id":  userID,
+		"habit_id": habitID,
+		"from":     from,
+		"to":       to,
+		"limit":    limit,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	logs, err := pgx.CollectRows(rows, pgx.RowToStructByName[habitlog.HabitLog])
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return logs, total, nil
+}

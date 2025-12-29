@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -11,20 +12,24 @@ import (
 	"github.com/reche13/habitum/internal/middleware"
 	"github.com/reche13/habitum/internal/model"
 	"github.com/reche13/habitum/internal/model/habit"
+	"github.com/reche13/habitum/internal/model/habitlog"
 	"github.com/reche13/habitum/internal/service"
 	"github.com/rs/zerolog"
 )
 
 type HabitHandler struct {
-	logger      zerolog.Logger
-	habitService *service.HabitService
+	logger         zerolog.Logger
+	habitService   *service.HabitService
+	habitLogService *service.HabitLogService
 }
 
 func NewHabitHandler(
 	habitService *service.HabitService,
+	habitLogService *service.HabitLogService,
 ) *HabitHandler {
 	return &HabitHandler{
-		habitService: habitService,
+		habitService:   habitService,
+		habitLogService: habitLogService,
 	}
 }
 
@@ -185,4 +190,211 @@ func (h *HabitHandler) DeleteHabit(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *HabitHandler) MarkComplete(c echo.Context) error {
+	userID := uuid.MustParse("04b151e6-7631-4548-9384-1e11bbaa84e8")
+
+	idParam := c.Param("id")
+	habitID, err := uuid.Parse(idParam)
+	if err != nil {
+		return errs.NewBadRequestError("Invalid habit ID format")
+	}
+
+	// Parse optional date parameter (defaults to today)
+	var logDate time.Time
+	if dateParam := c.QueryParam("date"); dateParam != "" {
+		parsedDate, err := time.Parse("2006-01-02", dateParam)
+		if err != nil {
+			return errs.NewBadRequestError("Invalid date format. Use YYYY-MM-DD")
+		}
+		logDate = parsedDate
+	} else {
+		logDate = time.Now().UTC()
+	}
+
+	// Verify habit exists and belongs to user
+	_, err = h.habitService.GetHabit(c.Request().Context(), habitID, userID)
+	if err != nil {
+		return err
+	}
+
+	// Mark as complete
+	payload := &habitlog.HabitLogPayload{
+		HabitID:   habitID,
+		LogDate:   logDate,
+		Completed: true,
+	}
+
+	log, err := h.habitLogService.MarkComplete(c.Request().Context(), userID, habitID, payload)
+	if err != nil {
+		return err
+	}
+
+	// Get updated habit with computed fields
+	updatedHabit, err := h.habitService.GetHabit(c.Request().Context(), habitID, userID)
+	if err != nil {
+		return err
+	}
+
+	response := map[string]interface{}{
+		"id":          log.ID,
+		"habitId":     log.HabitID,
+		"userId":      log.UserID,
+		"completedAt": log.CreatedAt,
+		"date":        log.LogDate.Format("2006-01-02"),
+		"habit":       updatedHabit,
+	}
+
+	return c.JSON(http.StatusCreated, model.SuccessResponse(response))
+}
+
+func (h *HabitHandler) UnmarkComplete(c echo.Context) error {
+	userID := uuid.MustParse("04b151e6-7631-4548-9384-1e11bbaa84e8")
+
+	idParam := c.Param("id")
+	habitID, err := uuid.Parse(idParam)
+	if err != nil {
+		return errs.NewBadRequestError("Invalid habit ID format")
+	}
+
+	// Parse optional date parameter (defaults to today)
+	var logDate time.Time
+	if dateParam := c.QueryParam("date"); dateParam != "" {
+		parsedDate, err := time.Parse("2006-01-02", dateParam)
+		if err != nil {
+			return errs.NewBadRequestError("Invalid date format. Use YYYY-MM-DD")
+		}
+		logDate = parsedDate
+	} else {
+		logDate = time.Now().UTC()
+	}
+
+	// Verify habit exists and belongs to user
+	_, err = h.habitService.GetHabit(c.Request().Context(), habitID, userID)
+	if err != nil {
+		return err
+	}
+
+	// Unmark completion
+	err = h.habitLogService.UnmarkComplete(c.Request().Context(), userID, habitID, logDate)
+	if err != nil {
+		return err
+	}
+
+	// Get updated habit with computed fields
+	updatedHabit, err := h.habitService.GetHabit(c.Request().Context(), habitID, userID)
+	if err != nil {
+		return err
+	}
+
+	response := map[string]interface{}{
+		"message": "Completion removed",
+		"habit":   updatedHabit,
+	}
+
+	return c.JSON(http.StatusOK, model.SuccessResponse(response))
+}
+
+func (h *HabitHandler) GetCompletions(c echo.Context) error {
+	userID := uuid.MustParse("04b151e6-7631-4548-9384-1e11bbaa84e8")
+
+	idParam := c.Param("id")
+	habitID, err := uuid.Parse(idParam)
+	if err != nil {
+		return errs.NewBadRequestError("Invalid habit ID format")
+	}
+
+	// Parse optional date range parameters
+	var startDate, endDate time.Time
+	if startParam := c.QueryParam("startDate"); startParam != "" {
+		startDate, err = time.Parse("2006-01-02", startParam)
+		if err != nil {
+			return errs.NewBadRequestError("Invalid startDate format. Use YYYY-MM-DD")
+		}
+	} else {
+		// Default to 365 days ago
+		startDate = time.Now().UTC().AddDate(0, 0, -365)
+	}
+
+	if endParam := c.QueryParam("endDate"); endParam != "" {
+		endDate, err = time.Parse("2006-01-02", endParam)
+		if err != nil {
+			return errs.NewBadRequestError("Invalid endDate format. Use YYYY-MM-DD")
+		}
+	} else {
+		endDate = time.Now().UTC()
+	}
+
+	// Parse limit
+	limit := 365 // default
+	if limitParam := c.QueryParam("limit"); limitParam != "" {
+		if parsedLimit, err := strconv.Atoi(limitParam); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+			if limit > 1000 {
+				limit = 1000 // cap at 1000
+			}
+		}
+	}
+
+	completions, total, err := h.habitLogService.GetCompletions(c.Request().Context(), userID, habitID, startDate, endDate, limit)
+	if err != nil {
+		return err
+	}
+
+	// Format response
+	completionRecords := make([]map[string]interface{}, len(completions))
+	for i, comp := range completions {
+		completionRecords[i] = map[string]interface{}{
+			"id":          comp.ID,
+			"habitId":     comp.HabitID,
+			"date":        comp.LogDate.Format("2006-01-02"),
+			"completedAt": comp.CreatedAt,
+		}
+	}
+
+	response := map[string]interface{}{
+		"completions": completionRecords,
+		"total":       total,
+	}
+
+	return c.JSON(http.StatusOK, model.SuccessResponse(response))
+}
+
+func (h *HabitHandler) GetCompletionHistory(c echo.Context) error {
+	userID := uuid.MustParse("04b151e6-7631-4548-9384-1e11bbaa84e8")
+
+	idParam := c.Param("id")
+	habitID, err := uuid.Parse(idParam)
+	if err != nil {
+		return errs.NewBadRequestError("Invalid habit ID format")
+	}
+
+	// Parse query parameters
+	allTime := c.QueryParam("allTime") == "true"
+	var year *int
+	if yearParam := c.QueryParam("year"); yearParam != "" {
+		if parsedYear, err := strconv.Atoi(yearParam); err == nil && parsedYear > 0 {
+			year = &parsedYear
+		}
+	}
+
+	dates, totalDays, completedDays, err := h.habitLogService.GetCompletionHistory(c.Request().Context(), userID, habitID, year, allTime)
+	if err != nil {
+		return err
+	}
+
+	// Format dates as strings
+	dateStrings := make([]string, len(dates))
+	for i, date := range dates {
+		dateStrings[i] = date.Format("2006-01-02")
+	}
+
+	response := map[string]interface{}{
+		"dates":         dateStrings,
+		"totalDays":     totalDays,
+		"completedDays": completedDays,
+	}
+
+	return c.JSON(http.StatusOK, model.SuccessResponse(response))
 }

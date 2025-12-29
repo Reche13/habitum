@@ -178,3 +178,85 @@ func (s *HabitLogService) GetCompletionRate(
 
 	return float64(completed) / float64(len(logs)), nil
 }
+
+func (s *HabitLogService) MarkComplete(
+	ctx context.Context,
+	userID uuid.UUID,
+	habitID uuid.UUID,
+	payload *habitlog.HabitLogPayload,
+) (*habitlog.HabitLog, error) {
+	payload.LogDate = lib.NormalizeDate(payload.LogDate)
+	payload.HabitID = habitID
+	payload.Completed = true
+
+	return s.habitLogRepo.Create(ctx, userID, payload)
+}
+
+func (s *HabitLogService) UnmarkComplete(
+	ctx context.Context,
+	userID uuid.UUID,
+	habitID uuid.UUID,
+	logDate time.Time,
+) error {
+	normalizedDate := lib.NormalizeDate(logDate)
+	return s.habitLogRepo.DeleteByHabitAndDate(ctx, userID, habitID, normalizedDate)
+}
+
+func (s *HabitLogService) GetCompletions(
+	ctx context.Context,
+	userID uuid.UUID,
+	habitID uuid.UUID,
+	startDate time.Time,
+	endDate time.Time,
+	limit int,
+) ([]habitlog.HabitLog, int, error) {
+	normalizedStart := lib.NormalizeDate(startDate)
+	normalizedEnd := lib.NormalizeDate(endDate)
+
+	return s.habitLogRepo.GetByHabitWithLimit(ctx, userID, habitID, normalizedStart, normalizedEnd, limit)
+}
+
+func (s *HabitLogService) GetCompletionHistory(
+	ctx context.Context,
+	userID uuid.UUID,
+	habitID uuid.UUID,
+	year *int,
+	allTime bool,
+) ([]time.Time, int, int, error) {
+	var startDate, endDate time.Time
+
+	if allTime {
+		// Get all time history
+		startDate = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = lib.NormalizeDate(time.Now().UTC())
+	} else if year != nil {
+		// Get specific year
+		startDate = time.Date(*year, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = time.Date(*year, 12, 31, 23, 59, 59, 0, time.UTC)
+	} else {
+		// Default to current year
+		now := time.Now().UTC()
+		currentYear := now.Year()
+		startDate = time.Date(currentYear, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = time.Date(currentYear, 12, 31, 23, 59, 59, 0, time.UTC)
+	}
+
+	logs, err := s.habitLogRepo.GetByHabit(ctx, userID, habitID, startDate, endDate)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	// Extract only completed logs and get dates
+	dates := make([]time.Time, 0)
+	for _, log := range logs {
+		if log.Completed {
+			dates = append(dates, log.LogDate)
+		}
+	}
+
+	// Calculate total days in period
+	totalDays := int(endDate.Sub(startDate).Hours()/24) + 1
+	completedDays := len(dates)
+
+	return dates, totalDays, completedDays, nil
+}

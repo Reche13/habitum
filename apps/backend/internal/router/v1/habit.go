@@ -12,6 +12,12 @@ func registerHabitRoutes(habits *echo.Group, h *handler.Handlers) {
 	habits.PATCH("/:id", h.Habit.UpdateHabit)
 	habits.DELETE("/:id", h.Habit.DeleteHabit)
 
+	// Completion endpoints
+	habits.POST("/:id/complete", h.Habit.MarkComplete)
+	habits.DELETE("/:id/complete", h.Habit.UnmarkComplete)
+	habits.GET("/:id/completions", h.Habit.GetCompletions)
+	habits.GET("/:id/completion-history", h.Habit.GetCompletionHistory)
+
 	habitLogs := habits.Group("/:habit_id/logs")
 	registerHabitLogRoutes(habitLogs, h)
 }

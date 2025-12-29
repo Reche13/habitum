@@ -13,7 +13,7 @@ func NewHandlers(services *service.Services) *Handlers {
 	return &Handlers{
 		Health: NewHealthHandler(),
 		User:   NewUserHandler(services.User),
-		Habit: NewHabitHandler(services.Habit),
+		Habit: NewHabitHandler(services.Habit, services.HabitLog),
 		HabitLog: NewHabitLogHandler(services.HabitLog),
 	}
 }
