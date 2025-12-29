@@ -78,22 +78,34 @@ func (r *HabitRepository) List(ctx context.Context, userID uuid.UUID, filters *h
 
 	// Build ORDER BY clause (whitelist approach for security)
 	orderBy := "created_at DESC" // default
+	orderDir := "DESC"            // default direction
+	
+	if filters != nil && filters.Order != nil {
+		orderDir = strings.ToUpper(*filters.Order)
+		if orderDir != "ASC" && orderDir != "DESC" {
+			orderDir = "DESC"
+		}
+	}
+
 	if filters != nil && filters.Sort != nil {
 		sortValue := strings.ToLower(*filters.Sort)
 		switch sortValue {
 		case "name":
-			orderBy = "name ASC"
+			orderBy = fmt.Sprintf("name %s", orderDir)
 		case "date":
-			orderBy = "created_at DESC"
+			orderBy = fmt.Sprintf("created_at %s", orderDir)
 		case "streak":
 			// Note: This will need to be updated when streaks are added to the table
-			orderBy = "created_at DESC"
+			orderBy = fmt.Sprintf("created_at %s", orderDir)
 		case "completion":
 			// Note: This will need to be updated when completion rates are calculated
-			orderBy = "created_at DESC"
+			orderBy = fmt.Sprintf("created_at %s", orderDir)
 		default:
-			orderBy = "created_at DESC"
+			orderBy = fmt.Sprintf("created_at %s", orderDir)
 		}
+	} else {
+		// If no sort specified, use default with order direction
+		orderBy = fmt.Sprintf("created_at %s", orderDir)
 	}
 
 	// Build base query

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -76,6 +77,14 @@ func (h *HabitHandler) GetHabits(c echo.Context) error {
 		}
 		if validSorts[sortParam] {
 			filters.Sort = &sortParam
+		}
+	}
+
+	// Order parameter (asc/desc)
+	if orderParam := c.QueryParam("order"); orderParam != "" {
+		orderLower := strings.ToLower(orderParam)
+		if orderLower == "asc" || orderLower == "desc" {
+			filters.Order = &orderLower
 		}
 	}
 
