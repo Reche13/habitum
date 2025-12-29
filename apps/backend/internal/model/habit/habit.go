@@ -40,5 +40,7 @@ type Habit struct {
 	Category Category `json:"category" db:"category"`
 	Frequency Frequency `json:"frequency" db:"frequency"`
 	TimesPerWeek *int `json:"times_per_week,omitempty" db:"times_per_week"`
+	CurrentStreak int `json:"current_streak" db:"current_streak"`
+	LongestStreak int `json:"longest_streak" db:"longest_streak"`
 	ArchivedAt *time.Time `json:"archived_at,omitempty" db:"archived_at"`
 }
