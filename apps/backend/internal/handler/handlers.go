@@ -6,6 +6,7 @@ type Handlers struct {
 	Health *HealthHandler
 	User   *UserHandler
 	Habit *HabitHandler
+	HabitLog *HabitLogHandler
 }
 
 func NewHandlers(services *service.Services) *Handlers {
@@ -13,5 +14,6 @@ func NewHandlers(services *service.Services) *Handlers {
 		Health: NewHealthHandler(),
 		User:   NewUserHandler(services.User),
 		Habit: NewHabitHandler(services.Habit),
+		HabitLog: NewHabitLogHandler(services.HabitLog),
 	}
 }

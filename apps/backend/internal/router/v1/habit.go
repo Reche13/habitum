@@ -8,4 +8,7 @@ import (
 func registerHabitRoutes(habits *echo.Group, h *handler.Handlers) {
 		habits.POST("", h.Habit.CreateHabit)
 		habits.GET("", h.Habit.GetHabits)
+
+		habitLogs := habits.Group("/:habit_id/logs")
+		registerHabitLogRoutes(habitLogs, h)
 }

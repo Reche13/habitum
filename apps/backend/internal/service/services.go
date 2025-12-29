@@ -16,11 +16,13 @@ func (b *BaseService) wrapError(err error) error {
 type Services struct{
 	User *UserService
 	Habit *HabitService
+	HabitLog *HabitLogService
 }
 
 func NewServices(repos *repository.Repositories) *Services {
 	return &Services{
 		User: NewUserService(repos.User),
 		Habit: NewHabitService(repos.Habit),
+		HabitLog: NewHabitLogService(repos.HabitLog),
 	}
 }
