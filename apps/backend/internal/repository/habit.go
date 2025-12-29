@@ -295,3 +295,32 @@ func (r *HabitRepository) Delete(ctx context.Context, habitID uuid.UUID, userID 
 
 	return nil
 }
+
+func (r *HabitRepository) UpdateStreaks(
+	ctx context.Context,
+	habitID uuid.UUID,
+	userID uuid.UUID,
+	currentStreak int,
+	longestStreak int,
+) error {
+	stmt := `
+		UPDATE habits
+		SET current_streak = @current_streak,
+			longest_streak = @longest_streak,
+			updated_at = NOW()
+		WHERE id = @habit_id
+			AND user_id = @user_id
+	`
+
+	_, err := r.db.Exec(ctx, stmt, pgx.NamedArgs{
+		"habit_id":      habitID,
+		"user_id":       userID,
+		"current_streak": currentStreak,
+		"longest_streak": longestStreak,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

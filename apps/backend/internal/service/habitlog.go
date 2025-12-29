@@ -189,7 +189,12 @@ func (s *HabitLogService) MarkComplete(
 	payload.HabitID = habitID
 	payload.Completed = true
 
-	return s.habitLogRepo.Create(ctx, userID, payload)
+	log, err := s.habitLogRepo.Create(ctx, userID, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return log, nil
 }
 
 func (s *HabitLogService) UnmarkComplete(

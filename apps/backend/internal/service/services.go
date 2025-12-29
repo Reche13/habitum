@@ -20,9 +20,10 @@ type Services struct{
 }
 
 func NewServices(repos *repository.Repositories) *Services {
+	habitLogService := NewHabitLogService(repos.HabitLog)
 	return &Services{
 		User: NewUserService(repos.User),
-		Habit: NewHabitService(repos.Habit),
-		HabitLog: NewHabitLogService(repos.HabitLog),
+		Habit: NewHabitService(repos.Habit, habitLogService),
+		HabitLog: habitLogService,
 	}
 }
