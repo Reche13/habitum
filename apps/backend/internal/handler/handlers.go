@@ -8,6 +8,7 @@ type Handlers struct {
 	Habit *HabitHandler
 	HabitLog *HabitLogHandler
 	Analytics *AnalyticsHandler
+	Calendar *CalendarHandler
 }
 
 func NewHandlers(services *service.Services) *Handlers {
@@ -17,5 +18,6 @@ func NewHandlers(services *service.Services) *Handlers {
 		Habit: NewHabitHandler(services.Habit, services.HabitLog),
 		HabitLog: NewHabitLogHandler(services.HabitLog),
 		Analytics: NewAnalyticsHandler(services.Analytics),
+		Calendar: NewCalendarHandler(services.Calendar),
 	}
 }

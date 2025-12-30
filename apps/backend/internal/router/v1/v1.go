@@ -14,4 +14,7 @@ func RegisterAPIV1Routes(api *echo.Group, h *handler.Handlers) {
 	
 	analytics := api.Group("/analytics")
 	registerAnalyticsRoutes(analytics, h)
+	
+	calendar := api.Group("/calendar")
+	registerCalendarRoutes(calendar, h)
 }
