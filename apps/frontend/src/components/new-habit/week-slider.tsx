@@ -14,7 +14,7 @@ export function TimesPerWeekSlider({ value, onChange }: Props) {
         min={1}
         max={7}
         step={1}
-        className="w-full"
+        className="w-full cursor-pointer"
       />
 
       <div className="flex justify-between text-xs text-muted-foreground">

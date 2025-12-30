@@ -35,13 +35,13 @@ export function IconPicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-lg border bg-background text-3xl transition hover:bg-muted"
+          className="cursor-pointer flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-background text-3xl transition hover:bg-muted"
         >
           {selected.emoji}
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-72 p-2">
+      <PopoverContent className="w-72 p-2 border border-zinc-200" align="start">
         <div className="grid grid-cols-6 gap-1">
           {ICONS.map((icon) => (
             <button
@@ -53,7 +53,7 @@ export function IconPicker({
               }}
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-lg text-xl transition",
-                value === icon.id ? "bg-primary/20" : "hover:bg-muted"
+                value === icon.id ? "bg-muted" : "hover:bg-muted"
               )}
             >
               {icon.emoji}

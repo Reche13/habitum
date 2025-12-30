@@ -19,7 +19,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <div className="w-full h-full border-r bg-background flex flex-col px-3 py-6">
+    <div className="w-full h-full border-r border-zinc-200 bg-background flex flex-col px-3 py-6">
       <div className="text-xl font-semibold text-foreground px-4">Habitum.</div>
 
       <nav className="flex flex-col gap-1 mt-6">

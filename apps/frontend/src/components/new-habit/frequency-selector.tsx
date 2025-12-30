@@ -18,12 +18,12 @@ export function FrequencySelector({
 }: Props) {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 rounded-xl border bg-muted p-1">
+      <div className="grid grid-cols-2 rounded-xl border border-zinc-200 bg-muted p-1">
         <button
           type="button"
           onClick={() => onChange("daily")}
           className={cn(
-            "rounded-lg px-4 py-2 text-sm transition",
+            "rounded-lg px-4 py-2 text-sm transition cursor-pointer",
             frequency === "daily"
               ? "bg-background shadow-sm font-medium"
               : "text-muted-foreground"
@@ -37,7 +37,7 @@ export function FrequencySelector({
           type="button"
           onClick={() => onChange("weekly")}
           className={cn(
-            "rounded-lg px-4 py-2 text-sm transition",
+            "rounded-lg px-4 py-2 text-sm transition cursor-pointer",
             frequency === "weekly"
               ? "bg-background shadow-sm font-medium"
               : "text-muted-foreground"

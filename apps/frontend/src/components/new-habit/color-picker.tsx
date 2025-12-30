@@ -36,12 +36,15 @@ export function ColorPicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-10 h-10 rounded-lg"
+          className="w-10 h-10 rounded-lg border-none cursor-pointer"
           style={{ background: value }}
         ></Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-fit p-3">
+      <PopoverContent
+        className="w-fit p-3 border border-zinc-200"
+        align="start"
+      >
         <div className="grid grid-cols-5 gap-2">
           {COLORS.map((color) => (
             <button

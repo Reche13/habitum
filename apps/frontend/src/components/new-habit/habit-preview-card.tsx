@@ -1,8 +1,10 @@
-import { Habit } from "@/types/habit";
 import { IconId } from "./icon-picker";
 import { CategoryId } from "./select-category";
-import { getIconEmoji, getCategoryLabel, getCategoryIcon } from "@/lib/habit-utils";
-import { cn } from "@/lib/utils";
+import {
+  getIconEmoji,
+  getCategoryLabel,
+  getCategoryIcon,
+} from "@/lib/habit-utils";
 
 interface HabitPreviewCardProps {
   name: string;
@@ -27,7 +29,7 @@ export function HabitPreviewCard({
   const hasContent = name.trim().length > 0;
 
   return (
-    <div className="rounded-xl border bg-background p-5">
+    <div className="rounded-xl border border-zinc-200 bg-background p-5">
       <div className="mb-4">
         <h3 className="text-sm font-medium text-muted-foreground mb-2">
           Preview
@@ -36,12 +38,14 @@ export function HabitPreviewCard({
       </div>
 
       {hasContent ? (
-        <div className="rounded-xl border bg-background p-5 flex gap-4">
+        <div
+          className="rounded-xl border border-zinc-200 shadow-sm bg-background p-5 flex gap-4"
+          style={{
+            borderBottom: `3px solid ${color}`,
+          }}
+        >
           {/* Icon */}
-          <div
-            className="h-14 w-14 rounded-xl flex items-center justify-center text-2xl shrink-0 transition-transform"
-            style={{ backgroundColor: color + "20", color: color }}
-          >
+          <div className="h-12 w-12 rounded-xl flex items-center justify-center text-2xl shrink-0 transition-transform bg-muted border border-zinc-200">
             {icon}
           </div>
 
@@ -70,7 +74,7 @@ export function HabitPreviewCard({
                 {category && (
                   <>
                     <span className="text-xs text-muted-foreground">•</span>
-                    <span className="text-xs rounded-full bg-muted px-2.5 py-1 flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground rounded-full bg-muted px-2.5 py-1 flex items-center gap-1.5">
                       <span>{getCategoryIcon(category)}</span>
                       {getCategoryLabel(category)}
                     </span>
@@ -81,8 +85,8 @@ export function HabitPreviewCard({
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed bg-muted/30 p-8 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-zinc-400 bg-muted/30 p-8 text-center">
+          <p className="text-sm text-muted-foreground/80">
             Start filling the form to see a preview
           </p>
         </div>
@@ -90,9 +94,3 @@ export function HabitPreviewCard({
     </div>
   );
 }
-
-
-
-
-
-
