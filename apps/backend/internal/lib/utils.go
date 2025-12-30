@@ -9,3 +9,11 @@ func NormalizeDate(t time.Time) time.Time {
 		time.UTC,
 	)
 }
+
+// GetStringValue safely gets string value from pointer
+func GetStringValue(ptr *string) string {
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
+}

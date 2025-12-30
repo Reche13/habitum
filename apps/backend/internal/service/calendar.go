@@ -136,8 +136,8 @@ func (s *CalendarService) GetCompletions(
 					completedHabits = append(completedHabits, calendar.HabitInfo{
 						ID:    habitInfo.ID.String(),
 						Name:  habitInfo.Name,
-						Color: getStringValue(habitInfo.Color),
-						Icon:  getStringValue(habitInfo.Icon),
+						Color: lib.GetStringValue(habitInfo.Color),
+						Icon:  lib.GetStringValue(habitInfo.Icon),
 					})
 					break
 				}
@@ -333,11 +333,4 @@ func (s *CalendarService) GetYear(
 	}, nil
 }
 
-// Helper function
-func getStringValue(ptr *string) string {
-	if ptr == nil {
-		return ""
-	}
-	return *ptr
-}
 
