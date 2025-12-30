@@ -17,6 +17,7 @@ type Services struct{
 	User *UserService
 	Habit *HabitService
 	HabitLog *HabitLogService
+	Analytics *AnalyticsService
 }
 
 func NewServices(repos *repository.Repositories) *Services {
@@ -25,5 +26,6 @@ func NewServices(repos *repository.Repositories) *Services {
 		User: NewUserService(repos.User),
 		Habit: NewHabitService(repos.Habit, habitLogService),
 		HabitLog: habitLogService,
+		Analytics: NewAnalyticsService(repos.Habit, repos.HabitLog),
 	}
 }
