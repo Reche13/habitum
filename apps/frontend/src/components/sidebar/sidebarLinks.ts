@@ -1,4 +1,12 @@
-import { Calendar, ChartColumn, Home, Plus, Target } from "lucide-react";
+import {
+  Calendar,
+  ChartColumn,
+  Home,
+  Plus,
+  Target,
+  Settings,
+  CheckCircle2,
+} from "lucide-react";
 
 export const SidebarLinks = [
   {
@@ -17,13 +25,23 @@ export const SidebarLinks = [
     icon: Plus,
   },
   {
+    label: "Quick Mark",
+    href: "/dashboard/quick-mark",
+    icon: CheckCircle2,
+  },
+  {
     label: "Calendar",
-    href: "/dashbaord/calendar",
+    href: "/dashboard/calendar",
     icon: Calendar,
   },
   {
     label: "Insights",
     href: "/dashboard/insights",
     icon: ChartColumn,
+  },
+  {
+    label: "Settings",
+    href: "/dashboard/settings",
+    icon: Settings,
   },
 ];

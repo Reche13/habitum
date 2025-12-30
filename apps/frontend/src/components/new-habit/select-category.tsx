@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -7,16 +6,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function SelectCategory() {
-  const [value, setValue] = useState<CategoryId | null>(null);
+interface SelectCategoryProps {
+  value?: CategoryId | null;
+  onChange?: (value: CategoryId | null) => void;
+}
 
+export function SelectCategory({ value = null, onChange }: SelectCategoryProps) {
   return (
     <Select
       value={value ?? undefined}
-      onValueChange={(v) => setValue(v as CategoryId)}
+      onValueChange={(v) => {
+        if (v === "none" || v === "") {
+          onChange?.(null);
+        } else {
+          onChange?.(v as CategoryId);
+        }
+      }}
     >
       <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select a category" className="sr-only" />
+        <SelectValue placeholder="Select a category (optional)" />
       </SelectTrigger>
 
       <SelectContent>
@@ -40,9 +48,9 @@ export const CATEGORIES = [
     icon: "🫀",
   },
   {
-    id: "fitness",
-    label: "Fitness",
-    icon: "💪",
+    id: "productivity",
+    label: "Productivity",
+    icon: "⚡",
   },
   {
     id: "learning",
@@ -50,14 +58,39 @@ export const CATEGORIES = [
     icon: "📘",
   },
   {
+    id: "work",
+    label: "Work",
+    icon: "💼",
+  },
+  {
+    id: "personal",
+    label: "Personal",
+    icon: "👤",
+  },
+  {
     id: "mindfulness",
     label: "Mindfulness",
     icon: "🧘",
   },
   {
-    id: "productivity",
-    label: "Productivity",
-    icon: "⚡",
+    id: "social",
+    label: "Social",
+    icon: "👥",
+  },
+  {
+    id: "creative",
+    label: "Creative",
+    icon: "🎨",
+  },
+  {
+    id: "finance",
+    label: "Finance",
+    icon: "💰",
+  },
+  {
+    id: "other",
+    label: "Other",
+    icon: "📌",
   },
 ] as const;
 

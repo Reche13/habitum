@@ -1,20 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 import { IconId, IconPicker } from "@/components/new-habit/icon-picker";
 import { ColorPicker } from "@/components/new-habit/color-picker";
 import { FrequencySelector } from "@/components/new-habit/frequency-selector";
 import { SelectCategory, CategoryId } from "@/components/new-habit/select-category";
 import { HabitPreviewCard } from "@/components/new-habit/habit-preview-card";
-import { useCreateHabit } from "@/lib/hooks";
-import type { CreateHabitPayload } from "@/lib/api/types";
+import { useHabit, useUpdateHabit } from "@/lib/hooks";
+import { mapHabitResponseToHabit } from "@/lib/api/mappers";
+import type { UpdateHabitPayload } from "@/lib/api/types";
 
 interface FormErrors {
   name?: string;
@@ -26,9 +28,19 @@ interface FormErrors {
 const MAX_NAME_LENGTH = 50;
 const MAX_DESCRIPTION_LENGTH = 200;
 
-export default function NewHabit() {
+export default function EditHabitPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const router = useRouter();
   const nameInputRef = useRef<HTMLInputElement>(null);
+  
+  const { data: habitResponse, isLoading, error } = useHabit(id);
+  const updateHabit = useUpdateHabit();
+
+  const habit = habitResponse ? mapHabitResponseToHabit(habitResponse) : null;
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -39,18 +51,47 @@ export default function NewHabit() {
   const [timesPerWeek, setTimesPerWeek] = useState([3]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const createHabit = useCreateHabit();
 
-  // Auto-focus name input on mount
   useEffect(() => {
+    if (habit) {
+      setName(habit.name);
+      setDescription(habit.description || "");
+      setIcon(habit.iconId || "fire");
+      setColor(habit.color || "#6366f1");
+      setCategory(habit.category || null);
+      setFrequency(habit.frequency);
+      setTimesPerWeek([habit.timesPerWeek || 3]);
+    }
     nameInputRef.current?.focus();
-  }, []);
+  }, [habit]);
 
-  // Validate form
+  if (isLoading) {
+    return (
+      <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error || !habit) {
+    return (
+      <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12">
+        <div className="max-w-4xl mx-auto text-center py-16">
+          <h1 className="text-2xl font-semibold mb-2">Habit not found</h1>
+          <p className="text-muted-foreground mb-6">
+            {error instanceof Error ? error.message : "The habit you're trying to edit doesn't exist."}
+          </p>
+          <Button asChild>
+            <Link href="/dashboard/habits">Back to Habits</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Name validation
     if (!name.trim()) {
       newErrors.name = "Habit name is required";
     } else if (name.trim().length < 2) {
@@ -59,17 +100,14 @@ export default function NewHabit() {
       newErrors.name = `Name must be less than ${MAX_NAME_LENGTH} characters`;
     }
 
-    // Description validation
     if (description.length > MAX_DESCRIPTION_LENGTH) {
       newErrors.description = `Description must be less than ${MAX_DESCRIPTION_LENGTH} characters`;
     }
 
-    // Frequency validation
     if (!frequency) {
       newErrors.frequency = "Frequency is required";
     }
 
-    // Times per week validation
     if (frequency === "weekly") {
       const times = timesPerWeek[0];
       if (!times || times < 1 || times > 7) {
@@ -81,7 +119,6 @@ export default function NewHabit() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setApiError(null);
@@ -91,45 +128,23 @@ export default function NewHabit() {
     }
 
     try {
-      const payload: CreateHabitPayload = {
+      const payload: UpdateHabitPayload = {
         name: name.trim(),
         description: description.trim() || undefined,
-        icon: icon, // Backend expects icon key
+        icon: icon,
         color: color,
         frequency: frequency,
         times_per_week: frequency === "weekly" ? timesPerWeek[0] : undefined,
-        category: category || "other", // Default category if none selected
+        category: category || undefined,
       };
 
-      await createHabit.mutateAsync(payload);
-      
-      // Redirect on success
-      router.push("/dashboard/habits");
+      await updateHabit.mutateAsync({ id, payload });
+      router.push(`/dashboard/habits/${id}`);
     } catch (error: any) {
-      setApiError(error?.message || "Failed to create habit. Please try again.");
-      console.error("Error creating habit:", error);
+      setApiError(error?.message || "Failed to update habit. Please try again.");
+      console.error("Error updating habit:", error);
     }
   };
-
-  // Handle cancel
-  const handleCancel = () => {
-    router.back();
-  };
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleCancel();
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        handleSubmit(e as any);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const isValid = name.trim().length >= 2 && !Object.keys(errors).length;
 
@@ -138,9 +153,13 @@ export default function NewHabit() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-semibold">New Habit</h1>
+          <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <h1 className="text-2xl sm:text-3xl font-semibold">Edit Habit</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Create a habit you want to practice consistently.
+            Update your habit details and preferences.
           </p>
         </div>
 
@@ -167,12 +186,10 @@ export default function NewHabit() {
                   onBlur={() => validate()}
                   className={cn(errors.name && "border-destructive")}
                   maxLength={MAX_NAME_LENGTH}
-                  aria-invalid={!!errors.name}
-                  aria-describedby={errors.name ? "name-error" : undefined}
                 />
                 <div className="flex items-center justify-between">
                   {errors.name ? (
-                    <p id="name-error" className="text-xs text-destructive flex items-center gap-1">
+                    <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.name}
                     </p>
@@ -207,12 +224,10 @@ export default function NewHabit() {
                   onBlur={() => validate()}
                   className={cn(errors.description && "border-destructive")}
                   maxLength={MAX_DESCRIPTION_LENGTH}
-                  aria-invalid={!!errors.description}
-                  aria-describedby={errors.description ? "description-error" : undefined}
                 />
                 <div className="flex items-center justify-between">
                   {errors.description ? (
-                    <p id="description-error" className="text-xs text-destructive flex items-center gap-1">
+                    <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.description}
                     </p>
@@ -280,32 +295,31 @@ export default function NewHabit() {
                 )}
               </div>
 
-              {/* API Error */}
-              {apiError && (
-                <div className="rounded-lg border border-destructive bg-destructive/10 p-4 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <p className="text-sm text-destructive">{apiError}</p>
-                </div>
-              )}
-
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-4">
+                {apiError && (
+                  <div className="rounded-lg border border-destructive bg-destructive/10 p-4 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <p className="text-sm text-destructive">{apiError}</p>
+                  </div>
+                )}
+
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={handleCancel}
-                  disabled={createHabit.isPending}
+                  onClick={() => router.back()}
+                  disabled={updateHabit.isPending}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!isValid || createHabit.isPending}>
-                  {createHabit.isPending ? (
+                <Button type="submit" disabled={!isValid || updateHabit.isPending}>
+                  {updateHabit.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating...
+                      Saving...
                     </>
                   ) : (
-                    "Create habit"
+                    "Save changes"
                   )}
                 </Button>
               </div>
@@ -329,3 +343,9 @@ export default function NewHabit() {
     </div>
   );
 }
+
+
+
+
+
+
