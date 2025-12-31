@@ -5,6 +5,7 @@ import type {
   UpdateHabitPayload,
   HabitFilters,
   PaginatedResponse,
+  APIResponse,
 } from "./types";
 
 // Habits API
@@ -27,20 +28,20 @@ export const habitsAPI = {
 
   // Get single habit
   getHabit: async (id: string) => {
-    const response = await apiClient.get<HabitResponse>(`/habits/${id}`);
-    return response.data;
+    const response = await apiClient.get<APIResponse<HabitResponse>>(`/habits/${id}`);
+    return response.data.data; // Unwrap APIResponse
   },
 
   // Create habit
   createHabit: async (payload: CreateHabitPayload) => {
-    const response = await apiClient.post<HabitResponse>("/habits", payload);
-    return response.data;
+    const response = await apiClient.post<APIResponse<HabitResponse>>("/habits", payload);
+    return response.data.data; // Unwrap APIResponse
   },
 
   // Update habit
   updateHabit: async (id: string, payload: UpdateHabitPayload) => {
-    const response = await apiClient.patch<HabitResponse>(`/habits/${id}`, payload);
-    return response.data;
+    const response = await apiClient.patch<APIResponse<HabitResponse>>(`/habits/${id}`, payload);
+    return response.data.data; // Unwrap APIResponse
   },
 
   // Delete habit
@@ -78,8 +79,11 @@ export const habitsAPI = {
     const params = new URLSearchParams();
     if (year) params.append("year", year.toString());
     if (allTime) params.append("allTime", "true");
-    const response = await apiClient.get(`/habits/${id}/completion-history?${params.toString()}`);
-    return response.data;
+    const response = await apiClient.get<APIResponse<{ dates: string[]; totalDays: number; completedDays: number }>>(
+      `/habits/${id}/completion-history?${params.toString()}`
+    );
+    return response.data.data; // Unwrap APIResponse
   },
 };
+
 

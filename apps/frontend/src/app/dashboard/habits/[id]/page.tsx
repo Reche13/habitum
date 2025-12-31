@@ -25,12 +25,24 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getCategoryLabel, getCategoryIcon } from "@/lib/habit-utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { getCategoryLabel, getCategoryIcon, getIconEmoji } from "@/lib/habit-utils";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useHabit, useMarkComplete, useUnmarkComplete, useDeleteHabit, useCompletionHistory } from "@/lib/hooks";
 import { mapHabitResponseToHabit } from "@/lib/api/mappers";
+import type { Habit } from "@/types/habit";
 
 // Generate heatmap data for the last year
 const generateHeatmapData = (habit: Habit) => {
@@ -38,24 +50,43 @@ const generateHeatmapData = (habit: Habit) => {
   const startDate = subDays(endDate, 364); // Last 365 days
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-  // Group days by week (starting Sunday)
+  // Group days by week - weeks start on Sunday (0)
+  // First, find the first day and pad to Sunday if needed
+  const firstDay = days[0];
+  const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
+  
+  // Group days into weeks
   const weeks: Date[][] = [];
   let currentWeek: Date[] = [];
-  let lastWeekDay = -1;
+  
+  // Pad the first week if it doesn't start on Sunday
+  if (firstDayOfWeek !== 0) {
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      currentWeek.push(new Date(0)); // Placeholder for empty days
+    }
+  }
 
   days.forEach((day) => {
     const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-
+    
+    // If it's Sunday and we have a previous week, save it
     if (dayOfWeek === 0 && currentWeek.length > 0) {
+      // Fill remaining days if week is incomplete
+      while (currentWeek.length < 7) {
+        currentWeek.push(new Date(0));
+      }
       weeks.push(currentWeek);
       currentWeek = [];
     }
-
+    
     currentWeek.push(day);
-    lastWeekDay = dayOfWeek;
   });
 
+  // Add the last week if it exists, and pad it
   if (currentWeek.length > 0) {
+    while (currentWeek.length < 7) {
+      currentWeek.push(new Date(0));
+    }
     weeks.push(currentWeek);
   }
 
@@ -77,6 +108,76 @@ export default function HabitDetailPage({
   const unmarkComplete = useUnmarkComplete();
   const deleteHabit = useDeleteHabit();
 
+  // Memoize completion history to prevent unnecessary re-renders
+  // The API now returns unwrapped data, so completionHistoryData is the data object directly
+  const completionHistoryKey = useMemo(() => {
+    if (!completionHistoryData?.dates) return '';
+    return JSON.stringify(Array.isArray(completionHistoryData.dates) ? completionHistoryData.dates : []);
+  }, [completionHistoryData?.dates]);
+
+  const completionHistoryArray = useMemo(() => {
+    if (completionHistoryData?.dates) {
+      return Array.isArray(completionHistoryData.dates) ? completionHistoryData.dates : [];
+    }
+    return [];
+  }, [completionHistoryKey]);
+
+  // Memoize habit object to prevent infinite re-renders
+  // Only depend on habit ID and completion history key
+  const habit = useMemo(() => {
+    if (!habitResponse) return null;
+    const mappedHabit = mapHabitResponseToHabit(habitResponse);
+    return {
+      ...mappedHabit,
+      completionHistory: completionHistoryArray.length > 0 
+        ? completionHistoryArray 
+        : (mappedHabit.completionHistory || []),
+    };
+  }, [habitResponse, completionHistoryKey]);
+
+  // Get values directly from habitResponse to ensure they're fresh
+  const currentStreak = habitResponse?.current_streak ?? 0;
+  const longestStreak = habitResponse?.longest_streak ?? 0;
+  const completionRate = habitResponse?.completionRate ?? 0;
+  const completedThisWeek = habitResponse?.completedThisWeek ?? 0;
+
+  // Memoize computed values to prevent unnecessary recalculations
+  const weeks = useMemo(() => {
+    if (!habit) return [];
+    return generateHeatmapData(habit);
+  }, [habit?.id]);
+
+  // Use completion history directly from the array, not from habit object
+  const isCompletedOnDate = useMemo(() => {
+    const history = completionHistoryArray;
+    const historySet = new Set(Array.isArray(history) ? history : []);
+    return (date: Date): boolean => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      return historySet.has(dateStr);
+    };
+  }, [completionHistoryKey]);
+
+  // Get month labels - show month name for the first week of each month
+  const monthLabels = useMemo(() => {
+    const labels: { weekIdx: number; month: string }[] = [];
+    let lastMonth = -1;
+
+    weeks.forEach((week, weekIdx) => {
+      if (week.length > 0) {
+        // Find the first real day in the week (not placeholder)
+        const firstRealDay = week.find(d => d instanceof Date && !isNaN(d.getTime()));
+        if (firstRealDay) {
+          const month = firstRealDay.getMonth();
+          if (month !== lastMonth) {
+            labels.push({ weekIdx, month: format(firstRealDay, "MMM") });
+            lastMonth = month;
+          }
+        }
+      }
+    });
+    return labels;
+  }, [weeks]);
+
   if (isLoading) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12 flex items-center justify-center min-h-[400px]">
@@ -85,7 +186,7 @@ export default function HabitDetailPage({
     );
   }
 
-  if (error || !habitResponse) {
+  if (error || !habitResponse || !habit) {
     return (
       <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto text-center py-16">
@@ -101,47 +202,13 @@ export default function HabitDetailPage({
     );
   }
 
-  const habit = mapHabitResponseToHabit(habitResponse);
-  
-  // Use completion history from API if available
-  if (completionHistoryData?.data) {
-    habit.completionHistory = completionHistoryData.data;
-  }
-
-  const weeks = generateHeatmapData(habit);
-  const streak = habit.currentStreak ?? 0;
-  const longestStreak = habit.longestStreak ?? 0;
-
-  const isCompletedOnDate = (date: Date): boolean => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return habit.completionHistory?.includes(dateStr) || false;
-  };
-
-
-  // Get month labels
-  const monthLabels: { weekIdx: number; month: string }[] = [];
-  let lastMonth = -1;
-
-  weeks.forEach((week, weekIdx) => {
-    if (week.length > 0) {
-      const firstDay = week[0];
-      const month = firstDay.getMonth();
-      if (month !== lastMonth) {
-        monthLabels.push({ weekIdx, month: format(firstDay, "MMM") });
-        lastMonth = month;
-      }
-    }
-  });
-
   const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this habit? This action cannot be undone.")) {
-      try {
-        await deleteHabit.mutateAsync(id);
-        router.push("/dashboard/habits");
-      } catch (error) {
-        console.error("Failed to delete habit:", error);
-        alert("Failed to delete habit. Please try again.");
-      }
+    try {
+      await deleteHabit.mutateAsync(id);
+      router.push("/dashboard/habits");
+    } catch (error) {
+      console.error("Failed to delete habit:", error);
+      alert("Failed to delete habit. Please try again.");
     }
   };
 
@@ -178,7 +245,7 @@ export default function HabitDetailPage({
                 className="h-16 w-16 rounded-xl flex items-center justify-center text-3xl shrink-0"
                 style={{ backgroundColor: habit.color + "20", color: habit.color }}
               >
-                {habit.icon}
+                {habit.icon || getIconEmoji(habit.iconId)}
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-3xl font-semibold mb-2">{habit.name}</h1>
@@ -236,23 +303,43 @@ export default function HabitDetailPage({
                   Edit
                 </Link>
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleteHabit.isPending}
-              >
-                {deleteHabit.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </>
-                )}
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={deleteHabit.isPending}
+                  >
+                    {deleteHabit.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Habit</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{habit.name}"? This action cannot be undone and all completion history will be permanently deleted.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
@@ -264,7 +351,7 @@ export default function HabitDetailPage({
               <Flame className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Current Streak</span>
             </div>
-            <p className="text-2xl font-semibold">{streak} days</p>
+            <p className="text-2xl font-semibold">{currentStreak} days</p>
           </div>
           <div className="rounded-lg border bg-background p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -278,7 +365,7 @@ export default function HabitDetailPage({
               <Target className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Completion Rate</span>
             </div>
-            <p className="text-2xl font-semibold">{habit.completionRate}%</p>
+            <p className="text-2xl font-semibold">{Math.round(completionRate)}%</p>
           </div>
           <div className="rounded-lg border bg-background p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -286,7 +373,7 @@ export default function HabitDetailPage({
               <span className="text-sm text-muted-foreground">This Week</span>
             </div>
             <p className="text-2xl font-semibold">
-              {habit.completedThisWeek || 0}/{habit.frequency === "daily" ? 7 : habit.timesPerWeek}
+              {completedThisWeek}/{habit.frequency === "daily" ? 7 : (habit.timesPerWeek || 0)}
             </p>
           </div>
         </div>
@@ -308,10 +395,10 @@ export default function HabitDetailPage({
             </div>
           </div>
 
-          <div className="space-y-2 overflow-x-auto">
+          <div className="space-y-2 overflow-x-auto pb-4">
             {/* Month Labels */}
-            <div className="flex gap-1 mb-2 min-w-fit">
-              <div className="w-12 shrink-0"></div>
+            <div className="flex gap-1.5 mb-3 min-w-fit px-1">
+              <div className="w-14 shrink-0"></div>
               {weeks.map((week, weekIdx) => {
                 const monthLabel = monthLabels.find(
                   (m) => m.weekIdx === weekIdx
@@ -319,7 +406,7 @@ export default function HabitDetailPage({
                 return (
                   <div
                     key={weekIdx}
-                    className="text-xs text-muted-foreground text-center w-3 shrink-0"
+                    className="text-xs font-medium text-muted-foreground text-center w-[11px] shrink-0"
                   >
                     {monthLabel ? monthLabel.month : ""}
                   </div>
@@ -328,13 +415,13 @@ export default function HabitDetailPage({
             </div>
 
             {/* Day Labels and Heatmap */}
-            <div className="flex gap-1 min-w-fit">
+            <div className="flex gap-1.5 min-w-fit px-1">
               {/* Day labels */}
-              <div className="space-y-1 pr-2 shrink-0">
+              <div className="space-y-1.5 pr-3 shrink-0">
                 {["", "Mon", "", "Wed", "", "Fri", ""].map((label, idx) => (
                   <div
                     key={idx}
-                    className="text-xs text-muted-foreground h-3 flex items-center"
+                    className="text-xs text-muted-foreground h-[11px] flex items-center font-medium"
                   >
                     {label}
                   </div>
@@ -342,42 +429,45 @@ export default function HabitDetailPage({
               </div>
 
               {/* Heatmap cells */}
-              {weeks.map((week, weekIdx) => (
-                <div key={weekIdx} className="flex flex-col gap-1 shrink-0">
-                  {week.map((day, dayIdx) => {
-                    const isCompleted = isCompletedOnDate(day);
-                    const isToday = isSameDay(day, new Date());
-                    const isSelected =
-                      selectedDate && isSameDay(day, selectedDate);
+              <div className="flex gap-1.5">
+                {weeks.map((week, weekIdx) => (
+                  <div key={weekIdx} className="flex flex-col gap-1.5 shrink-0">
+                    {week.map((day, dayIdx) => {
+                      // Skip placeholder days
+                      if (day.getTime() === 0) {
+                        return <div key={`${weekIdx}-${dayIdx}`} className="w-[11px] h-[11px]" />;
+                      }
 
-                    return (
-                      <div
-                        key={`${weekIdx}-${dayIdx}`}
-                        onClick={() => setSelectedDate(day)}
-                        className={cn(
-                          "w-3 h-3 rounded border transition-all hover:scale-125 hover:z-10 relative cursor-pointer",
-                          !isCompleted && "bg-muted",
-                          isToday && "ring-2 ring-primary",
-                          isSelected && "ring-2 ring-blue-500 ring-offset-1"
-                        )}
-                        style={
-                          isCompleted
-                            ? { backgroundColor: habit.color }
-                            : undefined
-                        }
-                        title={`${format(day, "MMM d, yyyy")}: ${
-                          isCompleted ? "Completed" : "Not completed"
-                        }`}
-                      />
-                    );
-                  })}
-                  {/* Fill remaining days if week is incomplete */}
-                  {week.length < 7 &&
-                    Array.from({ length: 7 - week.length }).map((_, idx) => (
-                      <div key={`empty-${idx}`} className="w-3 h-3" />
-                    ))}
-                </div>
-              ))}
+                      const isCompleted = isCompletedOnDate(day);
+                      const isToday = isSameDay(day, new Date());
+                      const isSelected =
+                        selectedDate && isSameDay(day, selectedDate);
+
+                      return (
+                        <div
+                          key={`${weekIdx}-${dayIdx}`}
+                          onClick={() => setSelectedDate(day)}
+                          className={cn(
+                            "w-[11px] h-[11px] rounded-sm border transition-all hover:scale-110 hover:z-10 relative cursor-pointer",
+                            !isCompleted && "bg-muted border-muted-foreground/20",
+                            isCompleted && "border-border",
+                            isToday && "ring-2 ring-primary ring-offset-1",
+                            isSelected && "ring-2 ring-blue-500 ring-offset-1 shadow-lg"
+                          )}
+                          style={
+                            isCompleted
+                              ? { backgroundColor: habit.color }
+                              : undefined
+                          }
+                          title={`${format(day, "MMM d, yyyy")}: ${
+                            isCompleted ? "Completed" : "Not completed"
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -410,9 +500,9 @@ export default function HabitDetailPage({
         {/* Recent Completions */}
         <div className="rounded-lg border bg-background p-6">
           <h2 className="text-lg font-semibold mb-4">Recent Completions</h2>
-          {habit.completionHistory && habit.completionHistory.length > 0 ? (
+          {completionHistoryArray.length > 0 ? (
             <div className="space-y-2">
-              {habit.completionHistory
+              {completionHistoryArray
                 .slice()
                 .reverse()
                 .slice(0, 10)

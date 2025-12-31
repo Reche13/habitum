@@ -27,3 +27,4 @@ func (h *DashboardHandler) GetHome(c echo.Context) error {
 	return c.JSON(200, dashboard)
 }
 
+

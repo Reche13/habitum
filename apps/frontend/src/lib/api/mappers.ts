@@ -8,7 +8,7 @@ export function mapHabitResponseToHabit(response: HabitResponse): Habit {
     name: response.name,
     description: response.description,
     icon: response.icon || "",
-    iconId: (response.iconId || response.icon || "") as any, // Use iconId if available, fallback to icon
+    iconId: (response.iconId || "fire") as any, // Use iconId if available, fallback to "fire"
     color: response.color || "#6366f1",
     frequency: response.frequency,
     timesPerWeek: response.times_per_week,

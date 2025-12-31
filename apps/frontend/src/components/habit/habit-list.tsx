@@ -12,11 +12,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { HabitCard } from "./habit-card";
 import { CATEGORIES, CategoryId } from "@/components/new-habit/select-category";
-import { Grid3x3, List, X, Plus, Target, TrendingUp, Calendar, Loader2 } from "lucide-react";
+import {
+  Grid3x3,
+  List,
+  X,
+  Plus,
+  Target,
+  TrendingUp,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
-import { useHabits } from "@/lib/hooks";
+import { useHabits, useDeleteHabit } from "@/lib/hooks";
 import { mapHabitResponsesToHabits } from "@/lib/api/mappers";
 import type { HabitFilters } from "@/lib/api/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type SortOption = "name" | "date" | "streak" | "completion";
 type ViewMode = "grid" | "list";
@@ -26,6 +45,13 @@ export function HabitsList() {
   const [category, setCategory] = useState<CategoryId | "all">("all");
   const [sortBy, setSortBy] = useState<SortOption>("name");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [habitToDelete, setHabitToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const deleteHabit = useDeleteHabit();
 
   // Build filters for API
   const filters: HabitFilters = useMemo(() => {
@@ -68,7 +94,10 @@ export function HabitsList() {
     }
 
     const total = habits.length;
-    const activeStreak = Math.max(...habits.map((h) => h.currentStreak ?? 0), 0);
+    const activeStreak = Math.max(
+      ...habits.map((h) => h.currentStreak ?? 0),
+      0
+    );
     const avgCompletion = Math.round(
       habits.reduce((sum, h) => sum + (h.completionRate ?? 0), 0) / total || 0
     );
@@ -87,6 +116,24 @@ export function HabitsList() {
   const handleClearFilters = () => {
     setQuery("");
     setCategory("all");
+  };
+
+  const handleDeleteClick = (habitId: string, habitName: string) => {
+    setHabitToDelete({ id: habitId, name: habitName });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!habitToDelete) return;
+
+    try {
+      await deleteHabit.mutateAsync(habitToDelete.id);
+      setDeleteDialogOpen(false);
+      setHabitToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete habit:", error);
+      alert("Failed to delete habit. Please try again.");
+    }
   };
 
   return (
@@ -110,13 +157,17 @@ export function HabitsList() {
         <div className="rounded-lg border bg-background p-4">
           <div className="flex items-center gap-2 mb-1">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Avg. Completion</span>
+            <span className="text-sm text-muted-foreground">
+              Avg. Completion
+            </span>
           </div>
           <p className="text-2xl font-semibold">{stats.avgCompletion}%</p>
         </div>
         <div className="rounded-lg border bg-background p-4">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm text-muted-foreground">Completed Today</span>
+            <span className="text-sm text-muted-foreground">
+              Completed Today
+            </span>
           </div>
           <p className="text-2xl font-semibold">
             {stats.completedTodayCount}/{stats.total}
@@ -147,7 +198,10 @@ export function HabitsList() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Select value={category} onValueChange={(v) => setCategory(v as CategoryId | "all")}>
+          <Select
+            value={category}
+            onValueChange={(v) => setCategory(v as CategoryId | "all")}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
@@ -164,7 +218,10 @@ export function HabitsList() {
             </SelectContent>
           </Select>
 
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <Select
+            value={sortBy}
+            onValueChange={(v) => setSortBy(v as SortOption)}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -235,7 +292,8 @@ export function HabitsList() {
               </div>
               <h3 className="text-lg font-semibold mb-2">No habits found</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-                Try adjusting your search or filters to find what you're looking for.
+                Try adjusting your search or filters to find what you're looking
+                for.
               </p>
               <Button variant="outline" onClick={handleClearFilters}>
                 Clear filters
@@ -252,10 +310,40 @@ export function HabitsList() {
           }
         >
           {habits.map((habit) => (
-            <HabitCard key={habit.id} habit={habit} />
+            <HabitCard
+              key={habit.id}
+              habit={habit}
+              onDelete={(habitId) => handleDeleteClick(habitId, habit.name)}
+            />
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Habit</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{habitToDelete?.name}"? This
+              action cannot be undone and all completion history will be
+              permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setHabitToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteHabit.isPending}
+            >
+              {deleteHabit.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

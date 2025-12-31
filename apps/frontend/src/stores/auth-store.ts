@@ -9,7 +9,10 @@ interface AuthState {
   } | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (user: { id: string; name: string; email: string }, token: string) => void;
+  login: (
+    user: { id: string; name: string; email: string },
+    token: string
+  ) => void;
   logout: () => void;
   // Mock account flag
   isMockAccount: boolean;
@@ -43,4 +46,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-

@@ -18,6 +18,7 @@ import {
 import { HabitPreviewCard } from "@/components/new-habit/habit-preview-card";
 import { useCreateHabit } from "@/lib/hooks";
 import type { CreateHabitPayload } from "@/lib/api/types";
+import { getIconEmoji } from "@/lib/habit-utils";
 
 interface FormErrors {
   name?: string;
@@ -91,7 +92,7 @@ export default function NewHabit() {
       const payload: CreateHabitPayload = {
         name: name.trim(),
         description: description.trim() || undefined,
-        icon: icon,
+        icon: getIconEmoji(icon),
         color: color,
         frequency: frequency,
         times_per_week: frequency === "weekly" ? timesPerWeek[0] : undefined,

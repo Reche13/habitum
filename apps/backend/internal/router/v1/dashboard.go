@@ -9,3 +9,4 @@ func registerDashboardRoutes(dashboard *echo.Group, h *handler.Handlers) {
 	dashboard.GET("/home", h.Dashboard.GetHome)
 }
 
+

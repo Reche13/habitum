@@ -69,3 +69,4 @@ type HeatmapDay struct {
 	Intensity      int     `json:"intensity"`      // 0-4 (for heatmap visualization)
 }
 
+

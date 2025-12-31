@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useRef } from "react";
+import { use, useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { HabitPreviewCard } from "@/components/new-habit/habit-preview-card";
 import { useHabit, useUpdateHabit } from "@/lib/hooks";
 import { mapHabitResponseToHabit } from "@/lib/api/mappers";
 import type { UpdateHabitPayload } from "@/lib/api/types";
+import { getIconEmoji } from "@/lib/habit-utils";
 
 interface FormErrors {
   name?: string;
@@ -40,7 +41,10 @@ export default function EditHabitPage({
   const { data: habitResponse, isLoading, error } = useHabit(id);
   const updateHabit = useUpdateHabit();
 
-  const habit = habitResponse ? mapHabitResponseToHabit(habitResponse) : null;
+  // Memoize habit object to prevent infinite re-renders
+  const habit = useMemo(() => {
+    return habitResponse ? mapHabitResponseToHabit(habitResponse) : null;
+  }, [habitResponse]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -54,16 +58,16 @@ export default function EditHabitPage({
 
   useEffect(() => {
     if (habit) {
-      setName(habit.name);
+      setName(habit.name || "");
       setDescription(habit.description || "");
       setIcon(habit.iconId || "fire");
       setColor(habit.color || "#6366f1");
       setCategory(habit.category || null);
       setFrequency(habit.frequency);
       setTimesPerWeek([habit.timesPerWeek || 3]);
+      nameInputRef.current?.focus();
     }
-    nameInputRef.current?.focus();
-  }, [habit]);
+  }, [habit?.id]); // Only depend on habit ID to prevent infinite loops
 
   if (isLoading) {
     return (
@@ -92,9 +96,10 @@ export default function EditHabitPage({
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!name.trim()) {
+    const trimmedName = (name || "").trim();
+    if (!trimmedName) {
       newErrors.name = "Habit name is required";
-    } else if (name.trim().length < 2) {
+    } else if (trimmedName.length < 2) {
       newErrors.name = "Name must be at least 2 characters";
     } else if (name.length > MAX_NAME_LENGTH) {
       newErrors.name = `Name must be less than ${MAX_NAME_LENGTH} characters`;
@@ -109,7 +114,7 @@ export default function EditHabitPage({
     }
 
     if (frequency === "weekly") {
-      const times = timesPerWeek[0];
+      const times = timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : undefined;
       if (!times || times < 1 || times > 7) {
         newErrors.timesPerWeek = "Must be between 1 and 7 times per week";
       }
@@ -129,12 +134,12 @@ export default function EditHabitPage({
 
     try {
       const payload: UpdateHabitPayload = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        icon: icon,
+        name: (name || "").trim(),
+        description: (description || "").trim() || undefined,
+        icon: getIconEmoji(icon),
         color: color,
         frequency: frequency,
-        times_per_week: frequency === "weekly" ? timesPerWeek[0] : undefined,
+        times_per_week: frequency === "weekly" && timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : undefined,
         category: category || undefined,
       };
 
@@ -146,7 +151,7 @@ export default function EditHabitPage({
     }
   };
 
-  const isValid = name.trim().length >= 2 && !Object.keys(errors).length;
+  const isValid = (name || "").trim().length >= 2 && !Object.keys(errors).length;
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12">
@@ -335,7 +340,7 @@ export default function EditHabitPage({
               color={color}
               category={category}
               frequency={frequency}
-              timesPerWeek={timesPerWeek[0]}
+              timesPerWeek={timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : 3}
             />
           </div>
         </div>
