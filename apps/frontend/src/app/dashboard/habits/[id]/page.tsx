@@ -44,33 +44,26 @@ import {
 import { mapHabitResponseToHabit } from "@/lib/api/mappers";
 import type { Habit } from "@/types/habit";
 
-const generateHeatmapData = (habit: Habit) => {
-  const endDate = new Date(2026, 6, 10);
-  const startDate = subDays(endDate, 364); // Last 365 days
+const generateHeatmapData = () => {
+  const endDate = new Date();
+  const startDate = subDays(endDate, 364);
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-  // Group days by week - weeks start on Sunday (0)
-  // First, find the first day and pad to Sunday if needed
   const firstDay = days[0];
-  const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
+  const firstDayOfWeek = firstDay.getDay();
 
-  // Group days into weeks
   const weeks: Date[][] = [];
   let currentWeek: Date[] = [];
 
-  // Pad the first week if it doesn't start on Sunday
   if (firstDayOfWeek !== 0) {
     for (let i = 0; i < firstDayOfWeek; i++) {
-      currentWeek.push(new Date(0)); // Placeholder for empty days
+      currentWeek.push(new Date(0));
     }
   }
 
   days.forEach((day) => {
-    const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-
-    // If it's Sunday and we have a previous week, save it
+    const dayOfWeek = day.getDay();
     if (dayOfWeek === 0 && currentWeek.length > 0) {
-      // Fill remaining days if week is incomplete
       while (currentWeek.length < 7) {
         currentWeek.push(new Date(0));
       }
@@ -81,7 +74,6 @@ const generateHeatmapData = (habit: Habit) => {
     currentWeek.push(day);
   });
 
-  // Add the last week if it exists, and pad it
   if (currentWeek.length > 0) {
     while (currentWeek.length < 7) {
       currentWeek.push(new Date(0));
@@ -111,8 +103,6 @@ export default function HabitDetailPage({
   const unmarkComplete = useUnmarkComplete();
   const deleteHabit = useDeleteHabit();
 
-  // Memoize completion history to prevent unnecessary re-renders
-  // The API now returns unwrapped data, so completionHistoryData is the data object directly
   const completionHistoryKey = useMemo(() => {
     if (!completionHistoryData?.dates) return "";
     return JSON.stringify(
@@ -131,8 +121,6 @@ export default function HabitDetailPage({
     return [];
   }, [completionHistoryKey]);
 
-  // Memoize habit object to prevent infinite re-renders
-  // Only depend on habit ID and completion history key
   const habit = useMemo(() => {
     if (!habitResponse) return null;
     const mappedHabit = mapHabitResponseToHabit(habitResponse);
@@ -145,19 +133,16 @@ export default function HabitDetailPage({
     };
   }, [habitResponse, completionHistoryKey]);
 
-  // Get values directly from habitResponse to ensure they're fresh
   const currentStreak = habitResponse?.current_streak ?? 0;
   const longestStreak = habitResponse?.longest_streak ?? 0;
   const completionRate = habitResponse?.completionRate ?? 0;
   const completedThisWeek = habitResponse?.completedThisWeek ?? 0;
 
-  // Memoize computed values to prevent unnecessary recalculations
   const weeks = useMemo(() => {
     if (!habit) return [];
-    return generateHeatmapData(habit);
+    return generateHeatmapData();
   }, [habit?.id]);
 
-  // Use completion history directly from the array, not from habit object
   const isCompletedOnDate = useMemo(() => {
     const history = completionHistoryArray;
     const historySet = new Set(Array.isArray(history) ? history : []);
@@ -167,16 +152,14 @@ export default function HabitDetailPage({
     };
   }, [completionHistoryKey]);
 
-  // Get month labels - show month name for the first week of each month
   const monthLabels = useMemo(() => {
     const labels: { weekIdx: number; month: string }[] = [];
     let lastMonth = -1;
 
     weeks.forEach((week, weekIdx) => {
       if (week.length > 0) {
-        // Find the first real day in the week (not placeholder)
         const firstRealDay = week.find(
-          (d) => d instanceof Date && !isNaN(d.getTime())
+          (d) => d instanceof Date && !isNaN(d.getTime()) && d.getTime() !== 0
         );
         if (firstRealDay) {
           const month = firstRealDay.getMonth();
