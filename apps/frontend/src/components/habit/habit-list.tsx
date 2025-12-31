@@ -140,21 +140,23 @@ export function HabitsList() {
     <>
       {/* Statistics Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-lg border bg-background p-4">
+        <div className="rounded-lg border border-zinc-300 bg-background p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-1">
             <Target className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Total Habits</span>
           </div>
           <p className="text-2xl font-semibold">{stats.total}</p>
         </div>
-        <div className="rounded-lg border bg-background p-4">
+
+        <div className="rounded-lg border border-zinc-300 bg-background p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Active Streak</span>
           </div>
           <p className="text-2xl font-semibold">{stats.activeStreak} days</p>
         </div>
-        <div className="rounded-lg border bg-background p-4">
+
+        <div className="rounded-lg border border-zinc-300 bg-background p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-1">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
@@ -163,7 +165,8 @@ export function HabitsList() {
           </div>
           <p className="text-2xl font-semibold">{stats.avgCompletion}%</p>
         </div>
-        <div className="rounded-lg border bg-background p-4">
+
+        <div className="rounded-lg border border-zinc-300 bg-background p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm text-muted-foreground">
               Completed Today
@@ -189,7 +192,7 @@ export function HabitsList() {
               variant="ghost"
               size="sm"
               onClick={handleClearFilters}
-              className="gap-2"
+              className="gap-2 cursor-pointer"
             >
               <X className="h-4 w-4" />
               Clear
@@ -202,15 +205,14 @@ export function HabitsList() {
             value={category}
             onValueChange={(v) => setCategory(v as CategoryId | "all")}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-45">
               <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border border-zinc-200">
               <SelectItem value="all">All categories</SelectItem>
               {CATEGORIES.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   <div className="flex items-center gap-2">
-                    <span>{cat.icon}</span>
                     <span>{cat.label}</span>
                   </div>
                 </SelectItem>
@@ -222,10 +224,10 @@ export function HabitsList() {
             value={sortBy}
             onValueChange={(v) => setSortBy(v as SortOption)}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-35">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border border-zinc-200">
               <SelectItem value="name">Name (A-Z)</SelectItem>
               <SelectItem value="streak">Streak (High)</SelectItem>
               <SelectItem value="completion">Completion</SelectItem>
@@ -233,11 +235,12 @@ export function HabitsList() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-1 border rounded-md p-1">
+          <div className="flex items-center gap-1 border border-zinc-200 rounded-md p-1">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="icon-sm"
               onClick={() => setViewMode("grid")}
+              className="cursor-pointer"
             >
               <Grid3x3 className="h-4 w-4" />
             </Button>
@@ -245,6 +248,7 @@ export function HabitsList() {
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="icon-sm"
               onClick={() => setViewMode("list")}
+              className="cursor-pointer"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -331,12 +335,15 @@ export function HabitsList() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setHabitToDelete(null)}>
+            <AlertDialogCancel
+              className="border border-zinc-200 cursor-pointer"
+              onClick={() => setHabitToDelete(null)}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
               disabled={deleteHabit.isPending}
             >
               {deleteHabit.isPending ? "Deleting..." : "Delete"}

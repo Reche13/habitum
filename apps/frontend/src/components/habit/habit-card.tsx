@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { Habit } from "@/types/habit";
 import {
   MoreVertical,
@@ -23,7 +22,7 @@ import { getCategoryLabel, getCategoryIcon } from "@/lib/habit-utils";
 interface HabitCardProps {
   habit: Habit;
   onEdit?: (habit: Habit) => void;
-  onDelete?: (habitId: string) => void;
+  onDelete: (habitId: string) => void;
   onComplete?: (habitId: string) => void;
 }
 
@@ -44,21 +43,28 @@ export function HabitCard({
     router.push(`/dashboard/habits/${habit.id}/edit`);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete(habit.id);
+  };
+
   const handleCardClick = () => {
     router.push(`/dashboard/habits/${habit.id}`);
   };
 
   return (
     <div
-      className="group relative rounded-xl border bg-background p-5 transition-all hover:shadow-md hover:border-primary/20 cursor-pointer"
+      className="group overflow-hidden relative rounded-xl border border-zinc-200  bg-background p-5 transition-all shadow-sm hover:shadow-md hover:border-primary/20 cursor-pointer"
       onClick={handleCardClick}
     >
-      <div className="flex gap-4">
+      <div
+        style={{ background: `${habit.color}` }}
+        className="absolute top-5 right-5 h-20 w-20 blur-2xl opacity-10 z-0"
+      />
+      <div className="flex gap-4 relative">
         {/* Icon */}
-        <div
-          className="h-14 w-14 rounded-xl flex items-center justify-center text-2xl shrink-0 transition-transform group-hover:scale-110"
-          style={{ backgroundColor: habit.color + "20", color: habit.color }}
-        >
+        <div className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0 transition-transform group-hover:scale-105">
           {habit.icon}
         </div>
 
@@ -80,7 +86,7 @@ export function HabitCard({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  className="shrink-0 cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -90,6 +96,7 @@ export function HabitCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
+                className="border border-zinc-200"
                 align="end"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -105,22 +112,12 @@ export function HabitCard({
                   {completedToday ? "Completed today" : "Mark complete"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    router.push(`/dashboard/habits/${habit.id}/edit`);
-                  }}
-                >
+                <DropdownMenuItem onClick={handleEdit}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDelete?.(habit.id);
-                  }}
+                  onClick={handleDelete}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
