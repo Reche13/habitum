@@ -2,17 +2,7 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import {
-  format,
-  startOfYear,
-  endOfYear,
-  eachDayOfInterval,
-  startOfWeek,
-  endOfWeek,
-  isSameYear,
-  isSameDay,
-  subDays,
-} from "date-fns";
+import { format, eachDayOfInterval, isSameDay, subDays } from "date-fns";
 import {
   ArrowLeft,
   Edit,
@@ -36,17 +26,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getCategoryLabel, getCategoryIcon, getIconEmoji } from "@/lib/habit-utils";
+import {
+  getCategoryLabel,
+  getCategoryIcon,
+  getIconEmoji,
+} from "@/lib/habit-utils";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useState, useMemo } from "react";
-import { useHabit, useMarkComplete, useUnmarkComplete, useDeleteHabit, useCompletionHistory } from "@/lib/hooks";
+import {
+  useHabit,
+  useMarkComplete,
+  useUnmarkComplete,
+  useDeleteHabit,
+  useCompletionHistory,
+} from "@/lib/hooks";
 import { mapHabitResponseToHabit } from "@/lib/api/mappers";
 import type { Habit } from "@/types/habit";
 
-// Generate heatmap data for the last year
 const generateHeatmapData = (habit: Habit) => {
-  const endDate = new Date();
+  const endDate = new Date(2026, 6, 10);
   const startDate = subDays(endDate, 364); // Last 365 days
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
@@ -54,11 +53,11 @@ const generateHeatmapData = (habit: Habit) => {
   // First, find the first day and pad to Sunday if needed
   const firstDay = days[0];
   const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
-  
+
   // Group days into weeks
   const weeks: Date[][] = [];
   let currentWeek: Date[] = [];
-  
+
   // Pad the first week if it doesn't start on Sunday
   if (firstDayOfWeek !== 0) {
     for (let i = 0; i < firstDayOfWeek; i++) {
@@ -68,7 +67,7 @@ const generateHeatmapData = (habit: Habit) => {
 
   days.forEach((day) => {
     const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-    
+
     // If it's Sunday and we have a previous week, save it
     if (dayOfWeek === 0 && currentWeek.length > 0) {
       // Fill remaining days if week is incomplete
@@ -78,7 +77,7 @@ const generateHeatmapData = (habit: Habit) => {
       weeks.push(currentWeek);
       currentWeek = [];
     }
-    
+
     currentWeek.push(day);
   });
 
@@ -101,9 +100,13 @@ export default function HabitDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
+
   const { data: habitResponse, isLoading, error } = useHabit(id);
-  const { data: completionHistoryData } = useCompletionHistory(id, undefined, true);
+  const { data: completionHistoryData } = useCompletionHistory(
+    id,
+    undefined,
+    true
+  );
   const markComplete = useMarkComplete();
   const unmarkComplete = useUnmarkComplete();
   const deleteHabit = useDeleteHabit();
@@ -111,13 +114,19 @@ export default function HabitDetailPage({
   // Memoize completion history to prevent unnecessary re-renders
   // The API now returns unwrapped data, so completionHistoryData is the data object directly
   const completionHistoryKey = useMemo(() => {
-    if (!completionHistoryData?.dates) return '';
-    return JSON.stringify(Array.isArray(completionHistoryData.dates) ? completionHistoryData.dates : []);
+    if (!completionHistoryData?.dates) return "";
+    return JSON.stringify(
+      Array.isArray(completionHistoryData.dates)
+        ? completionHistoryData.dates
+        : []
+    );
   }, [completionHistoryData?.dates]);
 
   const completionHistoryArray = useMemo(() => {
     if (completionHistoryData?.dates) {
-      return Array.isArray(completionHistoryData.dates) ? completionHistoryData.dates : [];
+      return Array.isArray(completionHistoryData.dates)
+        ? completionHistoryData.dates
+        : [];
     }
     return [];
   }, [completionHistoryKey]);
@@ -129,9 +138,10 @@ export default function HabitDetailPage({
     const mappedHabit = mapHabitResponseToHabit(habitResponse);
     return {
       ...mappedHabit,
-      completionHistory: completionHistoryArray.length > 0 
-        ? completionHistoryArray 
-        : (mappedHabit.completionHistory || []),
+      completionHistory:
+        completionHistoryArray.length > 0
+          ? completionHistoryArray
+          : mappedHabit.completionHistory || [],
     };
   }, [habitResponse, completionHistoryKey]);
 
@@ -165,7 +175,9 @@ export default function HabitDetailPage({
     weeks.forEach((week, weekIdx) => {
       if (week.length > 0) {
         // Find the first real day in the week (not placeholder)
-        const firstRealDay = week.find(d => d instanceof Date && !isNaN(d.getTime()));
+        const firstRealDay = week.find(
+          (d) => d instanceof Date && !isNaN(d.getTime())
+        );
         if (firstRealDay) {
           const month = firstRealDay.getMonth();
           if (month !== lastMonth) {
@@ -192,7 +204,9 @@ export default function HabitDetailPage({
         <div className="max-w-4xl mx-auto text-center py-16">
           <h1 className="text-2xl font-semibold mb-2">Habit not found</h1>
           <p className="text-muted-foreground mb-6">
-            {error instanceof Error ? error.message : "The habit you're looking for doesn't exist."}
+            {error instanceof Error
+              ? error.message
+              : "The habit you're looking for doesn't exist."}
           </p>
           <Button asChild>
             <Link href="/dashboard/habits">Back to Habits</Link>
@@ -233,7 +247,7 @@ export default function HabitDetailPage({
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="mb-4"
+            className="mb-4 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -241,10 +255,7 @@ export default function HabitDetailPage({
 
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4 flex-1">
-              <div
-                className="h-16 w-16 rounded-xl flex items-center justify-center text-3xl shrink-0"
-                style={{ backgroundColor: habit.color + "20", color: habit.color }}
-              >
+              <div className="h-16 w-16 bg-muted rounded-xl flex items-center justify-center text-3xl shrink-0">
                 {habit.icon || getIconEmoji(habit.iconId)}
               </div>
               <div className="flex-1 min-w-0">
@@ -273,14 +284,17 @@ export default function HabitDetailPage({
 
             <div className="flex items-center gap-2 shrink-0">
               <Button
-                variant={habit.completedToday ? "outline" : "default"}
+                variant="default"
                 onClick={handleComplete}
                 disabled={markComplete.isPending || unmarkComplete.isPending}
                 className={cn(
-                  habit.completedToday && "border-green-600 text-green-600"
+                  "cursor-pointer",
+                  habit.completedToday
+                    ? "bg-green-600 hover:bg-green-600/90"
+                    : "bg-foreground"
                 )}
               >
-                {(markComplete.isPending || unmarkComplete.isPending) ? (
+                {markComplete.isPending || unmarkComplete.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Updating...
@@ -297,7 +311,11 @@ export default function HabitDetailPage({
                   </>
                 )}
               </Button>
-              <Button variant="outline" asChild>
+              <Button
+                variant="outline"
+                asChild
+                className="border border-zinc-200"
+              >
                 <Link href={`/dashboard/habits/${id}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
@@ -307,6 +325,7 @@ export default function HabitDetailPage({
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="destructive"
+                    className="cursor-pointer"
                     disabled={deleteHabit.isPending}
                   >
                     {deleteHabit.isPending ? (
@@ -326,14 +345,18 @@ export default function HabitDetailPage({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Habit</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete "{habit.name}"? This action cannot be undone and all completion history will be permanently deleted.
+                      Are you sure you want to delete "{habit.name}"? This
+                      action cannot be undone and all completion history will be
+                      permanently deleted.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="border border-zinc-200 cursor-pointer">
+                      Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
                     >
                       Delete
                     </AlertDialogAction>
@@ -346,48 +369,57 @@ export default function HabitDetailPage({
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border bg-background p-4 border-zinc-200 shadow-xs">
             <div className="flex items-center gap-2 mb-1">
               <Flame className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Current Streak</span>
+              <span className="text-sm text-muted-foreground">
+                Current Streak
+              </span>
             </div>
             <p className="text-2xl font-semibold">{currentStreak} days</p>
           </div>
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border bg-background p-4 border-zinc-200 shadow-xs">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Longest Streak</span>
+              <span className="text-sm text-muted-foreground">
+                Longest Streak
+              </span>
             </div>
             <p className="text-2xl font-semibold">{longestStreak} days</p>
           </div>
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border bg-background p-4 border-zinc-200 shadow-xs">
             <div className="flex items-center gap-2 mb-1">
               <Target className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Completion Rate</span>
+              <span className="text-sm text-muted-foreground">
+                Completion Rate
+              </span>
             </div>
-            <p className="text-2xl font-semibold">{Math.round(completionRate)}%</p>
+            <p className="text-2xl font-semibold">
+              {Math.round(completionRate)}%
+            </p>
           </div>
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border bg-background p-4 border-zinc-200 shadow-xs">
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">This Week</span>
             </div>
             <p className="text-2xl font-semibold">
-              {completedThisWeek}/{habit.frequency === "daily" ? 7 : (habit.timesPerWeek || 0)}
+              {completedThisWeek}/
+              {habit.frequency === "daily" ? 7 : habit.timesPerWeek || 0}
             </p>
           </div>
         </div>
 
         {/* Completion Heatmap */}
-        <div className="rounded-lg border bg-background p-6 mb-8">
+        <div className="rounded-lg border border-zinc-200 bg-background shadow-xs p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Completion History</h2>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>No activity</span>
               <div className="flex gap-1">
-                <div className="w-3 h-3 rounded border bg-muted" />
+                <div className="w-3 h-3 rounded border border-zinc-200 bg-muted" />
                 <div
-                  className="w-3 h-3 rounded border"
+                  className="w-3 h-3 rounded border border-zinc-200"
                   style={{ backgroundColor: habit.color }}
                 />
               </div>
@@ -397,8 +429,8 @@ export default function HabitDetailPage({
 
           <div className="space-y-2 overflow-x-auto pb-4">
             {/* Month Labels */}
-            <div className="flex gap-1.5 mb-3 min-w-fit px-1">
-              <div className="w-14 shrink-0"></div>
+            <div className="flex gap-1 mb-3 min-w-fit px-1">
+              <div className="w-10.25 shrink-0"></div>
               {weeks.map((week, weekIdx) => {
                 const monthLabel = monthLabels.find(
                   (m) => m.weekIdx === weekIdx
@@ -406,7 +438,7 @@ export default function HabitDetailPage({
                 return (
                   <div
                     key={weekIdx}
-                    className="text-xs font-medium text-muted-foreground text-center w-[11px] shrink-0"
+                    className="text-xs font-medium text-muted-foreground text-center w-2.75 shrink-0"
                   >
                     {monthLabel ? monthLabel.month : ""}
                   </div>
@@ -418,24 +450,31 @@ export default function HabitDetailPage({
             <div className="flex gap-1.5 min-w-fit px-1">
               {/* Day labels */}
               <div className="space-y-1.5 pr-3 shrink-0">
-                {["", "Mon", "", "Wed", "", "Fri", ""].map((label, idx) => (
-                  <div
-                    key={idx}
-                    className="text-xs text-muted-foreground h-[11px] flex items-center font-medium"
-                  >
-                    {label}
-                  </div>
-                ))}
+                {["Sun", "Mon", "Tue", "Wed", "Thurs", "Fri", "Sat"].map(
+                  (label, idx) => (
+                    <div
+                      key={idx}
+                      className="text-[10px] text-muted-foreground/60 h-2.75 flex items-center font-medium"
+                    >
+                      {label}
+                    </div>
+                  )
+                )}
               </div>
 
               {/* Heatmap cells */}
-              <div className="flex gap-1.5">
+              <div className="flex gap-1">
                 {weeks.map((week, weekIdx) => (
-                  <div key={weekIdx} className="flex flex-col gap-1.5 shrink-0">
+                  <div key={weekIdx} className="flex flex-col gap-1 shrink-0">
                     {week.map((day, dayIdx) => {
                       // Skip placeholder days
                       if (day.getTime() === 0) {
-                        return <div key={`${weekIdx}-${dayIdx}`} className="w-[11px] h-[11px]" />;
+                        return (
+                          <div
+                            key={`${weekIdx}-${dayIdx}`}
+                            className="w-2.75 h-2.75"
+                          />
+                        );
                       }
 
                       const isCompleted = isCompletedOnDate(day);
@@ -448,11 +487,13 @@ export default function HabitDetailPage({
                           key={`${weekIdx}-${dayIdx}`}
                           onClick={() => setSelectedDate(day)}
                           className={cn(
-                            "w-[11px] h-[11px] rounded-sm border transition-all hover:scale-110 hover:z-10 relative cursor-pointer",
-                            !isCompleted && "bg-muted border-muted-foreground/20",
+                            "w-2.75 h-2.75 rounded-xs border box-border transition-all hover:scale-110 hover:z-10 relative cursor-pointer",
+                            !isCompleted &&
+                              "bg-muted border-muted-foreground/20",
                             isCompleted && "border-border",
                             isToday && "ring-2 ring-primary ring-offset-1",
-                            isSelected && "ring-2 ring-blue-500 ring-offset-1 shadow-lg"
+                            isSelected &&
+                              "ring-2 ring-green-600 ring-offset-1 shadow-lg"
                           )}
                           style={
                             isCompleted
@@ -473,20 +514,21 @@ export default function HabitDetailPage({
 
           {/* Selected Date Info */}
           {selectedDate && (
-            <div className="mt-4 p-3 rounded-lg border bg-muted/50">
+            <div className="mt-4 p-3 rounded-lg border border-zinc-200 shadow-xs bg-muted/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">
+                  <div className="font-medium text-sm text-foreground/80">
                     {format(selectedDate, "EEEE, MMMM d, yyyy")}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     {isCompletedOnDate(selectedDate)
                       ? "✓ Completed"
                       : "Not completed"}
                   </div>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
+                  className="cursor-pointer border border-zinc-200"
                   size="sm"
                   onClick={() => setSelectedDate(null)}
                 >
@@ -498,7 +540,7 @@ export default function HabitDetailPage({
         </div>
 
         {/* Recent Completions */}
-        <div className="rounded-lg border bg-background p-6">
+        <div className="rounded-lg border border-zinc-200 shadow-xs bg-background p-6">
           <h2 className="text-lg font-semibold mb-4">Recent Completions</h2>
           {completionHistoryArray.length > 0 ? (
             <div className="space-y-2">
@@ -508,7 +550,9 @@ export default function HabitDetailPage({
                 .slice(0, 10)
                 .map((dateStr) => {
                   const date = new Date(dateStr);
-                  const isToday = format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+                  const isToday =
+                    format(date, "yyyy-MM-dd") ===
+                    format(new Date(), "yyyy-MM-dd");
                   return (
                     <div
                       key={dateStr}
@@ -517,13 +561,18 @@ export default function HabitDetailPage({
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                         <div>
-                          <div className="font-medium">
-                            {isToday ? "Today" : format(date, "EEEE, MMMM d, yyyy")}
+                          <div className="font-medium text-sm text-foreground/80">
+                            {isToday
+                              ? "Today"
+                              : format(date, "EEEE, MMMM d, yyyy")}
                           </div>
                           {isToday && (
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {habit.completedTodayAt &&
-                                format(new Date(habit.completedTodayAt), "h:mm a")}
+                                format(
+                                  new Date(habit.completedTodayAt),
+                                  "h:mm a"
+                                )}
                             </div>
                           )}
                         </div>
@@ -542,4 +591,3 @@ export default function HabitDetailPage({
     </div>
   );
 }
-
