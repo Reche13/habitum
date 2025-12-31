@@ -7,6 +7,7 @@ import { useHabits, useMarkComplete, useUnmarkComplete } from "@/lib/hooks";
 import { getIconEmoji } from "@/lib/habit-utils";
 import { format } from "date-fns";
 import { mapHabitResponsesToHabits } from "@/lib/api/mappers";
+import { cn } from "@/lib/utils";
 
 export default function QuickMarkPage() {
   const today = new Date();
@@ -14,15 +15,18 @@ export default function QuickMarkPage() {
   const markComplete = useMarkComplete();
   const unmarkComplete = useUnmarkComplete();
 
-  const habits = habitsData?.data ? mapHabitResponsesToHabits(habitsData.data) : [];
+  const habits = habitsData?.data
+    ? mapHabitResponsesToHabits(habitsData.data)
+    : [];
   // Filter out archived habits - archivedAt is optional, so check if it exists
   const activeHabits = habits.filter((h) => !h.archivedAt);
-  
+
   // Initialize completedIds from API data
   const initialCompletedIds = new Set(
     activeHabits.filter((h) => h.completedToday).map((h) => h.id)
   );
-  const [completedIds, setCompletedIds] = useState<Set<string>>(initialCompletedIds);
+  const [completedIds, setCompletedIds] =
+    useState<Set<string>>(initialCompletedIds);
 
   // Update completedIds when habits data changes
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function QuickMarkPage() {
 
   if (habitsLoading) {
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12 flex items-center justify-center min-h-[400px]">
+      <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12 flex items-center justify-center min-h-100">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -65,7 +69,8 @@ export default function QuickMarkPage() {
 
   const completedCount = completedIds.size;
   const totalCount = activeHabits.length;
-  const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const completionRate =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12">
@@ -87,7 +92,7 @@ export default function QuickMarkPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-6 rounded-lg border bg-background p-6">
+        <div className="mt-6 rounded-lg border border-zinc-200 shadow-xs bg-background p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Today's Progress</h2>
             <span className="text-2xl font-bold">{completionRate}%</span>
@@ -99,7 +104,7 @@ export default function QuickMarkPage() {
             />
           </div>
           {completionRate === 100 && (
-            <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400">
+            <div className="mt-4 flex items-center gap-2 text-green-600">
               <Sparkles className="h-4 w-4" />
               <span className="text-sm font-medium">
                 Amazing! You've completed all habits today! 🎉
@@ -124,20 +129,13 @@ export default function QuickMarkPage() {
             return (
               <div
                 key={habit.id}
-                className={`rounded-lg border bg-background p-4 transition-all ${
-                  isCompleted
-                    ? "bg-green-500/5 border-green-500/20"
-                    : "hover:shadow-md"
-                }`}
+                className={cn(
+                  "rounded-lg border flex flex-col border-zinc-200 shadow-xs hover:shadow-md bg-background p-4 transition-all",
+                  isCompleted ? "" : ""
+                )}
               >
-                <div className="flex items-start gap-3 mb-4">
-                  <div
-                    className="h-12 w-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                    style={{
-                      backgroundColor: color + "20",
-                      color: color,
-                    }}
-                  >
+                <div className="flex items-start gap-3 mb-4 flex-1">
+                  <div className="h-12 w-12 bg-muted rounded-xl flex items-center justify-center text-2xl shrink-0">
                     {icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -147,35 +145,46 @@ export default function QuickMarkPage() {
                         {habit.description}
                       </p>
                     )}
-                    {habit.currentStreak > 0 && (
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <span className="text-xs">🔥</span>
-                        <span className="text-xs text-muted-foreground">
-                          {habit.currentStreak} day streak
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1.5 mt-3">
+                      {habit.currentStreak !== undefined &&
+                      habit.currentStreak > 0 ? (
+                        <>
+                          <span className="text-xs">🔥</span>
+                          <span className="text-xs text-muted-foreground">
+                            {habit.currentStreak} day streak
+                          </span>
+                        </>
+                      ) : (
+                        <span></span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {isCompleted ? (
                   <Button
                     onClick={() => handleUncomplete(habit.id)}
-                    className="w-full"
+                    className="w-full border border-zinc-200 cursor-pointer"
                     size="sm"
                     variant="outline"
-                    disabled={unmarkComplete.isPending || markComplete.isPending}
+                    disabled={
+                      unmarkComplete.isPending || markComplete.isPending
+                    }
                   >
                     <X className="h-4 w-4 mr-2" />
-                    {unmarkComplete.isPending || markComplete.isPending ? "Updating..." : "Unmark"}
+                    {unmarkComplete.isPending || markComplete.isPending
+                      ? "Updating..."
+                      : "Unmark"}
                   </Button>
                 ) : (
                   <Button
                     onClick={() => handleComplete(habit.id)}
-                    className="w-full"
+                    className="w-full cursor-pointer"
                     size="sm"
                     variant="default"
-                    disabled={markComplete.isPending || unmarkComplete.isPending}
+                    disabled={
+                      markComplete.isPending || unmarkComplete.isPending
+                    }
                   >
                     {markComplete.isPending || unmarkComplete.isPending ? (
                       <>
@@ -198,4 +207,3 @@ export default function QuickMarkPage() {
     </div>
   );
 }
-

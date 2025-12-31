@@ -12,7 +12,10 @@ import Link from "next/link";
 import { IconId, IconPicker } from "@/components/new-habit/icon-picker";
 import { ColorPicker } from "@/components/new-habit/color-picker";
 import { FrequencySelector } from "@/components/new-habit/frequency-selector";
-import { SelectCategory, CategoryId } from "@/components/new-habit/select-category";
+import {
+  SelectCategory,
+  CategoryId,
+} from "@/components/new-habit/select-category";
 import { HabitPreviewCard } from "@/components/new-habit/habit-preview-card";
 import { useHabit, useUpdateHabit } from "@/lib/hooks";
 import { mapHabitResponseToHabit } from "@/lib/api/mappers";
@@ -37,11 +40,10 @@ export default function EditHabitPage({
   const { id } = use(params);
   const router = useRouter();
   const nameInputRef = useRef<HTMLInputElement>(null);
-  
+
   const { data: habitResponse, isLoading, error } = useHabit(id);
   const updateHabit = useUpdateHabit();
 
-  // Memoize habit object to prevent infinite re-renders
   const habit = useMemo(() => {
     return habitResponse ? mapHabitResponseToHabit(habitResponse) : null;
   }, [habitResponse]);
@@ -67,11 +69,11 @@ export default function EditHabitPage({
       setTimesPerWeek([habit.timesPerWeek || 3]);
       nameInputRef.current?.focus();
     }
-  }, [habit?.id]); // Only depend on habit ID to prevent infinite loops
+  }, [habit?.id]);
 
   if (isLoading) {
     return (
-      <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12 flex items-center justify-center min-h-[400px]">
+      <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12 flex items-center justify-center min-h-100">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -83,7 +85,9 @@ export default function EditHabitPage({
         <div className="max-w-4xl mx-auto text-center py-16">
           <h1 className="text-2xl font-semibold mb-2">Habit not found</h1>
           <p className="text-muted-foreground mb-6">
-            {error instanceof Error ? error.message : "The habit you're trying to edit doesn't exist."}
+            {error instanceof Error
+              ? error.message
+              : "The habit you're trying to edit doesn't exist."}
           </p>
           <Button asChild>
             <Link href="/dashboard/habits">Back to Habits</Link>
@@ -114,7 +118,8 @@ export default function EditHabitPage({
     }
 
     if (frequency === "weekly") {
-      const times = timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : undefined;
+      const times =
+        timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : undefined;
       if (!times || times < 1 || times > 7) {
         newErrors.timesPerWeek = "Must be between 1 and 7 times per week";
       }
@@ -139,26 +144,36 @@ export default function EditHabitPage({
         icon: getIconEmoji(icon),
         color: color,
         frequency: frequency,
-        times_per_week: frequency === "weekly" && timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : undefined,
+        times_per_week:
+          frequency === "weekly" && timesPerWeek && timesPerWeek.length > 0
+            ? timesPerWeek[0]
+            : undefined,
         category: category || undefined,
       };
 
       await updateHabit.mutateAsync({ id, payload });
       router.push(`/dashboard/habits/${id}`);
     } catch (error: any) {
-      setApiError(error?.message || "Failed to update habit. Please try again.");
+      setApiError(
+        error?.message || "Failed to update habit. Please try again."
+      );
       console.error("Error updating habit:", error);
     }
   };
 
-  const isValid = (name || "").trim().length >= 2 && !Object.keys(errors).length;
+  const isValid =
+    (name || "").trim().length >= 2 && !Object.keys(errors).length;
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-20 py-8 sm:py-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -223,7 +238,10 @@ export default function EditHabitPage({
                   onChange={(e) => {
                     setDescription(e.target.value);
                     if (errors.description) {
-                      setErrors((prev) => ({ ...prev, description: undefined }));
+                      setErrors((prev) => ({
+                        ...prev,
+                        description: undefined,
+                      }));
                     }
                   }}
                   onBlur={() => validate()}
@@ -250,7 +268,9 @@ export default function EditHabitPage({
                 <label className="text-sm font-medium">Appearance</label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Icon</label>
+                    <label className="text-xs text-muted-foreground">
+                      Icon
+                    </label>
                     <div className="flex items-center gap-3">
                       <IconPicker value={icon} onChange={setIcon} />
                       <span className="text-sm text-muted-foreground">
@@ -259,7 +279,9 @@ export default function EditHabitPage({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Color</label>
+                    <label className="text-xs text-muted-foreground">
+                      Color
+                    </label>
                     <div className="flex items-center gap-3">
                       <ColorPicker value={color} onChange={setColor} />
                       <span className="text-sm text-muted-foreground">
@@ -317,7 +339,10 @@ export default function EditHabitPage({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!isValid || updateHabit.isPending}>
+                <Button
+                  type="submit"
+                  disabled={!isValid || updateHabit.isPending}
+                >
                   {updateHabit.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -340,7 +365,9 @@ export default function EditHabitPage({
               color={color}
               category={category}
               frequency={frequency}
-              timesPerWeek={timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : 3}
+              timesPerWeek={
+                timesPerWeek && timesPerWeek.length > 0 ? timesPerWeek[0] : 3
+              }
             />
           </div>
         </div>
@@ -348,9 +375,3 @@ export default function EditHabitPage({
     </div>
   );
 }
-
-
-
-
-
-
