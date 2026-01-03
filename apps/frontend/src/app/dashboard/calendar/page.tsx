@@ -43,6 +43,7 @@ import {
   useCalendarMonth,
   useCalendarWeek,
   useCalendarYear,
+  useCalendarCompletions,
 } from "@/lib/hooks";
 import { mapHabitResponsesToHabits } from "@/lib/api/mappers";
 
@@ -118,9 +119,9 @@ export default function CalendarPage() {
     }> = [];
 
     if (viewMode === "month" && monthData?.days) {
-      const dayData = monthData.days.find((d) => d.date === dateStr);
+      const dayData = monthData.days.find((d: { date: string }) => d.date === dateStr);
       if (dayData) {
-        completions = dayData.completions.map((id) => {
+        completions = dayData.completions.map((id: string) => {
           const habit = habits.find((h) => h.id === id);
           return {
             id,
@@ -131,9 +132,9 @@ export default function CalendarPage() {
         });
       }
     } else if (viewMode === "week" && weekData?.days) {
-      const dayData = weekData.days.find((d) => d.date === dateStr);
+      const dayData = weekData.days.find((d: { date: string }) => d.date === dateStr);
       if (dayData) {
-        completions = dayData.completions.map((id) => {
+        completions = dayData.completions.map((id: string) => {
           const habit = habits.find((h) => h.id === id);
           return {
             id,
@@ -143,12 +144,8 @@ export default function CalendarPage() {
           };
         });
       }
-    } else if (viewMode === "year" && yearData?.heatmap) {
-      const dayData = yearData.heatmap.find((d) => d.date === dateStr);
-      if (dayData && dayData.completionRate > 0) {
-        completions = [];
-      }
     }
+    // Year view completions are handled separately in YearHeatmapView component
 
     return completions;
   };
@@ -157,13 +154,13 @@ export default function CalendarPage() {
     const dateStr = format(date, "yyyy-MM-dd");
 
     if (viewMode === "month" && monthData?.days) {
-      const dayData = monthData.days.find((d) => d.date === dateStr);
+      const dayData = monthData.days.find((d: { date: string }) => d.date === dateStr);
       return dayData?.completionRate || 0;
     } else if (viewMode === "week" && weekData?.days) {
-      const dayData = weekData.days.find((d) => d.date === dateStr);
+      const dayData = weekData.days.find((d: { date: string }) => d.date === dateStr);
       return dayData?.completionRate || 0;
     } else if (viewMode === "year" && yearData?.heatmap) {
-      const dayData = yearData.heatmap.find((d) => d.date === dateStr);
+      const dayData = yearData.heatmap.find((d: { date: string }) => d.date === dateStr);
       return dayData?.completionRate || 0;
     }
 
@@ -304,6 +301,7 @@ export default function CalendarPage() {
                 currentDate={currentDate}
                 getCompletionsForDate={getCompletionsForDate}
                 getCompletionRateForDate={getCompletionRateForDate}
+                effectiveHabitIds={effectiveHabitIds}
               />
             ) : viewMode === "week" ? (
               <WeekView
@@ -702,6 +700,7 @@ function YearHeatmapView({
   currentDate,
   getCompletionsForDate,
   getCompletionRateForDate,
+  effectiveHabitIds,
 }: {
   calendarDays: Date[];
   currentDate: Date;
@@ -709,8 +708,17 @@ function YearHeatmapView({
     date: Date
   ) => Array<{ id: string; name: string; color?: string; icon?: string }>;
   getCompletionRateForDate: (date: Date) => number;
+  effectiveHabitIds?: string[];
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  
+  // Fetch completions for the selected date
+  const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+  const { data: selectedDateCompletions } = useCalendarCompletions(
+    selectedDateStr,
+    selectedDateStr,
+    effectiveHabitIds
+  );
 
   const firstDay = calendarDays[0];
   const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
@@ -778,9 +786,24 @@ function YearHeatmapView({
     return colors[intensity] || colors[0];
   };
 
-  const selectedCompletions = selectedDate
-    ? getCompletionsForDate(selectedDate)
-    : [];
+  // Get completions for selected date - use API data if available, otherwise fallback
+  const selectedCompletions = useMemo(() => {
+    if (!selectedDate) return [];
+    
+    // If we have API data for the selected date, use it
+    if (selectedDateCompletions?.completions) {
+      const dateStr = format(selectedDate, "yyyy-MM-dd");
+      const dayData = selectedDateCompletions.completions.find(
+        (c: { date: string }) => c.date === dateStr
+      );
+      if (dayData && dayData.habits) {
+        return dayData.habits;
+      }
+    }
+    
+    // Fallback to empty array for year view (since heatmap doesn't include habit details)
+    return [];
+  }, [selectedDate, selectedDateCompletions]);
 
   return (
     <div className="space-y-6">
