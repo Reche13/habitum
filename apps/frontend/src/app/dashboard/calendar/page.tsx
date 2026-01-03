@@ -119,7 +119,9 @@ export default function CalendarPage() {
     }> = [];
 
     if (viewMode === "month" && monthData?.days) {
-      const dayData = monthData.days.find((d: { date: string }) => d.date === dateStr);
+      const dayData = monthData.days.find(
+        (d: { date: string }) => d.date === dateStr
+      );
       if (dayData) {
         completions = dayData.completions.map((id: string) => {
           const habit = habits.find((h) => h.id === id);
@@ -132,7 +134,9 @@ export default function CalendarPage() {
         });
       }
     } else if (viewMode === "week" && weekData?.days) {
-      const dayData = weekData.days.find((d: { date: string }) => d.date === dateStr);
+      const dayData = weekData.days.find(
+        (d: { date: string }) => d.date === dateStr
+      );
       if (dayData) {
         completions = dayData.completions.map((id: string) => {
           const habit = habits.find((h) => h.id === id);
@@ -154,13 +158,19 @@ export default function CalendarPage() {
     const dateStr = format(date, "yyyy-MM-dd");
 
     if (viewMode === "month" && monthData?.days) {
-      const dayData = monthData.days.find((d: { date: string }) => d.date === dateStr);
+      const dayData = monthData.days.find(
+        (d: { date: string }) => d.date === dateStr
+      );
       return dayData?.completionRate || 0;
     } else if (viewMode === "week" && weekData?.days) {
-      const dayData = weekData.days.find((d: { date: string }) => d.date === dateStr);
+      const dayData = weekData.days.find(
+        (d: { date: string }) => d.date === dateStr
+      );
       return dayData?.completionRate || 0;
     } else if (viewMode === "year" && yearData?.heatmap) {
-      const dayData = yearData.heatmap.find((d: { date: string }) => d.date === dateStr);
+      const dayData = yearData.heatmap.find(
+        (d: { date: string }) => d.date === dateStr
+      );
       return dayData?.completionRate || 0;
     }
 
@@ -711,9 +721,11 @@ function YearHeatmapView({
   effectiveHabitIds?: string[];
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
+
   // Fetch completions for the selected date
-  const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+  const selectedDateStr = selectedDate
+    ? format(selectedDate, "yyyy-MM-dd")
+    : "";
   const { data: selectedDateCompletions } = useCalendarCompletions(
     selectedDateStr,
     selectedDateStr,
@@ -789,7 +801,7 @@ function YearHeatmapView({
   // Get completions for selected date - use API data if available, otherwise fallback
   const selectedCompletions = useMemo(() => {
     if (!selectedDate) return [];
-    
+
     // If we have API data for the selected date, use it
     if (selectedDateCompletions?.completions) {
       const dateStr = format(selectedDate, "yyyy-MM-dd");
@@ -800,7 +812,7 @@ function YearHeatmapView({
         return dayData.habits;
       }
     }
-    
+
     // Fallback to empty array for year view (since heatmap doesn't include habit details)
     return [];
   }, [selectedDate, selectedDateCompletions]);
@@ -924,7 +936,8 @@ function YearHeatmapView({
                 {format(selectedDate, "EEEE, MMMM d, yyyy")}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {getCompletionRateForDate(selectedDate)}% completion rate
+                {Math.round(getCompletionRateForDate(selectedDate))}% completion
+                rate
               </p>
             </div>
             <Button
@@ -953,13 +966,7 @@ function YearHeatmapView({
                         "bg-green-500/10 border-green-500/30 hover:bg-green-500/15 transition-colors"
                       )}
                     >
-                      <div
-                        className="h-12 w-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm"
-                        style={{
-                          backgroundColor: (habit.color || "#6366f1") + "20",
-                          color: habit.color || "#6366f1",
-                        }}
-                      >
+                      <div className="h-12 w-12 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-sm bg-muted">
                         {habit.icon || "🔥"}
                       </div>
                       <div className="flex-1 min-w-0">
