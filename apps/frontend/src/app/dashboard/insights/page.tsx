@@ -2,7 +2,14 @@
 
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
-import { ChartColumn, TrendingUp, Target, Calendar, Award, Loader2 } from "lucide-react";
+import {
+  ChartColumn,
+  TrendingUp,
+  Target,
+  Calendar,
+  Award,
+  Loader2,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,7 +34,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { getCategoryLabel, getCategoryIcon } from "@/lib/habit-utils";
+import { getCategoryIcon } from "@/lib/habit-utils";
 import {
   useCompletionTrend,
   useCategoryBreakdown,
@@ -43,33 +50,46 @@ import { mapHabitResponsesToHabits } from "@/lib/api/mappers";
 type TimePeriod = "7d" | "30d" | "90d" | "all";
 
 const COLORS = [
-  "#ef4444",
-  "#6366f1",
-  "#10b981",
-  "#3b82f6",
-  "#f59e0b",
-  "#8b5cf6",
+  "#f87171", // red-400
+  "#fb923c", // orange-400
+  "#fbbf24", // amber-400
+  "#a3e635", // lime-400
+  "#4ade80", // green-400 (optional)
+  "#2dd4bf", // teal-400
+  "#22d3ee", // cyan-400
+  "#60a5fa", // blue-400
+  "#818cf8", // indigo-400
+  "#a78bfa", // violet-400
 ];
 
 export default function InsightsPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("30d");
 
-  // Fetch analytics data
-  const { data: completionTrend, isLoading: trendLoading } = useCompletionTrend(timePeriod);
-  const { data: categoryBreakdown, isLoading: categoryLoading } = useCategoryBreakdown();
+  const { data: completionTrend, isLoading: trendLoading } =
+    useCompletionTrend(timePeriod);
+  const { data: categoryBreakdown, isLoading: categoryLoading } =
+    useCategoryBreakdown();
   const { data: dayOfWeek, isLoading: dayLoading } = useDayOfWeekAnalysis();
   const { data: metrics, isLoading: metricsLoading } = useMetrics();
-  const { data: topHabits, isLoading: topHabitsLoading } = useTopHabits(10, "completion");
-  const { data: streakLeaderboard, isLoading: streakLoading } = useStreakLeaderboard(10);
+  const { data: topHabits, isLoading: topHabitsLoading } = useTopHabits(
+    10,
+    "completion"
+  );
+  const { data: streakLeaderboard, isLoading: streakLoading } =
+    useStreakLeaderboard(10);
   const { data: insights, isLoading: insightsLoading } = useInsights();
-  
-  // Get all habits for color/icon mapping
+
   const { data: habitsData } = useHabits();
 
-  const isLoading = trendLoading || categoryLoading || dayLoading || metricsLoading || 
-                    topHabitsLoading || streakLoading || insightsLoading;
+  const isLoading =
+    trendLoading ||
+    categoryLoading ||
+    dayLoading ||
+    metricsLoading ||
+    topHabitsLoading ||
+    streakLoading ||
+    insightsLoading;
 
-  // Format completion trend data
   const completionTrendData = useMemo(() => {
     if (!completionTrend?.data) return [];
     return completionTrend.data.map((item) => ({
@@ -79,7 +99,6 @@ export default function InsightsPage() {
     }));
   }, [completionTrend]);
 
-  // Format category breakdown
   const categoryData = useMemo(() => {
     if (!categoryBreakdown?.data) return [];
     return categoryBreakdown.data.map((item) => ({
@@ -89,10 +108,8 @@ export default function InsightsPage() {
     }));
   }, [categoryBreakdown]);
 
-  // Format day of week data
   const dayOfWeekData = useMemo(() => {
     if (!dayOfWeek?.data) return [];
-    // Map day index to day name (0=Sunday, 1=Monday, etc.)
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     return dayOfWeek.data
       .sort((a, b) => a.dayIndex - b.dayIndex)
@@ -103,7 +120,6 @@ export default function InsightsPage() {
       }));
   }, [dayOfWeek]);
 
-  // Format metrics
   const formattedMetrics = useMemo(() => {
     if (!metrics) {
       return {
@@ -121,12 +137,11 @@ export default function InsightsPage() {
     };
   }, [metrics]);
 
-  // Format top habits - need to get full habit data for color/icon
   const formattedTopHabits = useMemo(() => {
     if (!topHabits?.data || !habitsData?.data) return [];
     const habits = mapHabitResponsesToHabits(habitsData.data);
-    const habitMap = new Map(habits.map(h => [h.id, h]));
-    
+    const habitMap = new Map(habits.map((h) => [h.id, h]));
+
     return topHabits.data.slice(0, 5).map((item: any) => {
       const fullHabit = habitMap.get(item.habitId || item.id);
       return {
@@ -139,12 +154,11 @@ export default function InsightsPage() {
     });
   }, [topHabits, habitsData]);
 
-  // Format streak leaderboard - need to get full habit data for color/icon
   const formattedStreakLeaderboard = useMemo(() => {
     if (!streakLeaderboard?.data || !habitsData?.data) return [];
     const habits = mapHabitResponsesToHabits(habitsData.data);
-    const habitMap = new Map(habits.map(h => [h.id, h]));
-    
+    const habitMap = new Map(habits.map((h) => [h.id, h]));
+
     return streakLeaderboard.data.slice(0, 5).map((item: any) => {
       const fullHabit = habitMap.get(item.habitId || item.id);
       return {
@@ -173,10 +187,10 @@ export default function InsightsPage() {
             value={timePeriod}
             onValueChange={(v) => setTimePeriod(v as TimePeriod)}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-35">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border border-zinc-200">
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
               <SelectItem value="90d">Last 90 days</SelectItem>
@@ -187,30 +201,36 @@ export default function InsightsPage() {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border border-zinc-200 shadow-xs bg-background p-4">
             <div className="flex items-center gap-2 mb-1">
               <Target className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
                 Avg. Completion
               </span>
             </div>
-            <p className="text-2xl font-semibold">{formattedMetrics.avgCompletion}%</p>
+            <p className="text-2xl font-semibold">
+              {formattedMetrics.avgCompletion}%
+            </p>
           </div>
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border border-zinc-200 shadow-xs bg-background p-4">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Avg. Streak</span>
             </div>
-            <p className="text-2xl font-semibold">{formattedMetrics.avgStreak} days</p>
+            <p className="text-2xl font-semibold">
+              {formattedMetrics.avgStreak} days
+            </p>
           </div>
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border border-zinc-200 shadow-xs bg-background p-4">
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">This Week</span>
             </div>
-            <p className="text-2xl font-semibold">{formattedMetrics.totalCompletions}</p>
+            <p className="text-2xl font-semibold">
+              {formattedMetrics.totalCompletions}
+            </p>
           </div>
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border border-zinc-200 shadow-xs bg-background p-4">
             <div className="flex items-center gap-2 mb-1">
               <Award className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Consistency</span>
@@ -225,53 +245,60 @@ export default function InsightsPage() {
       {/* Completion Trends */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Completion Trends</h2>
-        <div className="rounded-lg border bg-background p-6">
+        <div className="rounded-lg border border-zinc-200 shadow-sm bg-background p-6">
           {completionTrendData.length === 0 ? (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+            <div className="flex items-center justify-center h-75 text-muted-foreground">
               No trend data available
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={completionTrendData}>
-              <defs>
-                <linearGradient
-                  id="colorCompletion"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis
-                dataKey="date"
-                className="text-xs"
-                tick={{ fill: "currentColor" }}
-              />
-              <YAxis
-                className="text-xs"
-                tick={{ fill: "currentColor" }}
-                domain={[0, 100]}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "0.5rem",
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="completionRate"
-                stroke="#6366f1"
-                fillOpacity={1}
-                fill="url(#colorCompletion)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+                <defs>
+                  <linearGradient
+                    id="colorCompletion"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#00c951" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#00c951" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-muted-foreground/30"
+                />
+                <XAxis
+                  dataKey="date"
+                  className="text-[10px]"
+                  fontSize={10}
+                  color="#888888"
+                  tick={{ fill: "currentColor" }}
+                />
+                <YAxis
+                  className="text-xs"
+                  fontSize={14}
+                  color="#666666"
+                  tick={{ fill: "currentColor" }}
+                  domain={[0, 100]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--background))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.5rem",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="completionRate"
+                  stroke="#00c951"
+                  fillOpacity={1}
+                  fill="url(#colorCompletion)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           )}
         </div>
       </section>
@@ -280,9 +307,9 @@ export default function InsightsPage() {
         {/* Category Analysis */}
         <section>
           <h2 className="text-xl font-semibold mb-4">Category Breakdown</h2>
-          <div className="rounded-lg border bg-background p-6">
+          <div className="rounded-lg border border-zinc-200 shadow-sm bg-background p-6">
             {categoryData.length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              <div className="flex items-center justify-center h-75 text-muted-foreground">
                 No category data available
               </div>
             ) : (
@@ -291,23 +318,23 @@ export default function InsightsPage() {
                   <PieChart>
                     <Pie
                       data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${((percent || 0) * 100).toFixed(0)}%`
-                  }
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) =>
+                        `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                      }
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
@@ -320,11 +347,15 @@ export default function InsightsPage() {
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                          style={{
+                            backgroundColor: COLORS[idx % COLORS.length],
+                          }}
                         />
                         <span className="text-sm">{cat.name}</span>
                       </div>
-                      <span className="text-sm font-medium">{cat.value}%</span>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {cat.value}%
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -336,39 +367,46 @@ export default function InsightsPage() {
         {/* Day of Week Analysis */}
         <section>
           <h2 className="text-xl font-semibold mb-4">Best Day of Week</h2>
-          <div className="rounded-lg border bg-background p-6">
+          <div className="rounded-lg border border-zinc-200 shadow-sm bg-background p-6">
             {dayOfWeekData.length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              <div className="flex items-center justify-center h-75 text-muted-foreground">
                 No day of week data available
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dayOfWeekData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="day"
-                  className="text-xs"
-                  tick={{ fill: "currentColor" }}
-                />
-                <YAxis
-                  className="text-xs"
-                  tick={{ fill: "currentColor" }}
-                  domain={[0, 100]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "0.5rem",
-                  }}
-                />
-                <Bar
-                  dataKey="completionRate"
-                  fill="#6366f1"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    className="text-xs"
+                    fontSize={12}
+                    color="#666666"
+                    tick={{ fill: "currentColor" }}
+                  />
+                  <YAxis
+                    className="text-xs"
+                    fontSize={12}
+                    color="#666666"
+                    tick={{ fill: "currentColor" }}
+                    domain={[0, 100]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "0.5rem",
+                    }}
+                  />
+                  <Bar
+                    dataKey="completionRate"
+                    fill="#00c951"
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </div>
         </section>
@@ -378,43 +416,39 @@ export default function InsightsPage() {
         {/* Habit Performance */}
         <section>
           <h2 className="text-xl font-semibold mb-4">Habit Performance</h2>
-          <div className="rounded-lg border bg-background p-6 space-y-4">
+          <div className="rounded-lg border border-zinc-200 shadow-sm bg-background p-6 space-y-4">
             {formattedTopHabits.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No habit data available
               </div>
             ) : (
               formattedTopHabits.map((habit: any, idx) => (
-              <div key={habit.id} className="flex items-center gap-4">
-                <div className="flex items-center gap-3 flex-1">
-                  <div
-                    className="h-10 w-10 rounded-lg flex items-center justify-center text-xl shrink-0"
-                    style={{
-                      backgroundColor: habit.color + "20",
-                      color: habit.color,
-                    }}
-                  >
-                    {habit.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium truncate">{habit.name}</span>
-                      <span className="text-sm font-semibold">
-                        {habit.completionRate}%
-                      </span>
+                <div key={habit.id} className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="h-10 w-10 rounded-lg flex items-center justify-center text-xl shrink-0 bg-muted">
+                      {habit.icon}
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all"
-                        style={{
-                          width: `${habit.completionRate}%`,
-                          backgroundColor: habit.color,
-                        }}
-                      />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm text-foreground truncate">
+                          {habit.name}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {habit.completionRate}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full transition-all"
+                          style={{
+                            width: `${habit.completionRate}%`,
+                            backgroundColor: habit.color,
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
               ))
             )}
           </div>
@@ -423,7 +457,7 @@ export default function InsightsPage() {
         {/* Streak Leaderboard */}
         <section>
           <h2 className="text-xl font-semibold mb-4">Streak Leaderboard</h2>
-          <div className="rounded-lg border bg-background p-6 space-y-4">
+          <div className="rounded-lg border border-zinc-200 shadow-sm bg-background p-6 space-y-4">
             {formattedStreakLeaderboard.length > 0 ? (
               formattedStreakLeaderboard.map((habit: any, idx) => (
                 <div
@@ -433,19 +467,12 @@ export default function InsightsPage() {
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm shrink-0">
                     {idx + 1}
                   </div>
-                  <div
-                    className="h-10 w-10 rounded-lg flex items-center justify-center text-xl shrink-0"
-                    style={{
-                      backgroundColor: habit.color + "20",
-                      color: habit.color,
-                    }}
-                  >
+                  <div className="h-10 w-10 rounded-lg flex items-center justify-center text-xl shrink-0 bg-muted">
                     {habit.icon}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{habit.name}</div>
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <span>🔥</span>
                       <span>
                         {habit.currentStreak} day
                         {habit.currentStreak !== 1 ? "s" : ""}
@@ -454,7 +481,7 @@ export default function InsightsPage() {
                   </div>
                   {habit.longestStreak && (
                     <div className="text-sm text-muted-foreground">
-                      Best: {habit.longestStreak}
+                      best : {habit.longestStreak}
                     </div>
                   )}
                 </div>
@@ -479,16 +506,24 @@ export default function InsightsPage() {
               const getIcon = () => {
                 switch (insight.type) {
                   case "positive":
-                    return <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />;
+                    return (
+                      <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    );
                   case "suggestion":
-                    return <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+                    return (
+                      <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    );
                   case "achievement":
-                    return <Award className="h-4 w-4 text-orange-600 dark:text-orange-400" />;
+                    return (
+                      <Award className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    );
                   default:
-                    return <ChartColumn className="h-4 w-4 text-purple-600 dark:text-purple-400" />;
+                    return (
+                      <ChartColumn className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    );
                 }
               };
-              
+
               const getBgColor = () => {
                 switch (insight.type) {
                   case "positive":
@@ -503,7 +538,10 @@ export default function InsightsPage() {
               };
 
               return (
-                <div key={idx} className="rounded-lg border bg-background p-4">
+                <div
+                  key={idx}
+                  className="rounded-lg border border-zinc-200 shadow-sm bg-background p-4"
+                >
                   <div className="flex items-start gap-3">
                     <div className={`rounded-full ${getBgColor()} p-2`}>
                       {getIcon()}
