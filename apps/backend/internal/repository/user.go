@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -171,4 +172,277 @@ func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+// GetByEmail finds a user by email
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
+	stmt := `
+		SELECT
+			*
+		FROM 
+			users
+		WHERE
+			email = @email
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"email": email,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+// GetByOAuthProvider finds a user by OAuth provider and provider ID
+func (r *UserRepository) GetByOAuthProvider(ctx context.Context, provider, providerID string) (*user.User, error) {
+	stmt := `
+		SELECT
+			*
+		FROM 
+			users
+		WHERE
+			oauth_provider = @provider
+			AND oauth_provider_id = @provider_id
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"provider":    provider,
+		"provider_id": providerID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+// CreateWithPassword creates a user with a password hash
+func (r *UserRepository) CreateWithPassword(
+	ctx context.Context,
+	name, email, passwordHash string,
+) (*user.User, error) {
+	stmt := `
+		INSERT INTO 
+			users (
+				name,
+				email,
+				password_hash
+			)
+		VALUES 
+			(
+				@name,
+				@email,
+				@password_hash
+			)
+		RETURNING
+			*
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"name":          name,
+		"email":         email,
+		"password_hash": passwordHash,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+// UpdateEmailVerification updates email verification status and token
+func (r *UserRepository) UpdateEmailVerification(
+	ctx context.Context,
+	userID uuid.UUID,
+	verified bool,
+	token *string,
+	expiresAt *time.Time,
+) error {
+	stmt := `
+		UPDATE users
+		SET 
+			email_verified = @verified,
+			email_verification_token = @token,
+			email_verification_expires_at = @expires_at,
+			updated_at = NOW()
+		WHERE id = @id
+	`
+
+	_, err := r.db.Exec(ctx, stmt, pgx.NamedArgs{
+		"id":         userID,
+		"verified":   verified,
+		"token":      token,
+		"expires_at": expiresAt,
+	})
+	return err
+}
+
+// UpdatePassword updates user password hash
+func (r *UserRepository) UpdatePassword(ctx context.Context, userID uuid.UUID, passwordHash string) error {
+	stmt := `
+		UPDATE users
+		SET 
+			password_hash = @password_hash,
+			updated_at = NOW()
+		WHERE id = @id
+	`
+
+	_, err := r.db.Exec(ctx, stmt, pgx.NamedArgs{
+		"id":           userID,
+		"password_hash": passwordHash,
+	})
+	return err
+}
+
+// UpdatePasswordResetToken updates password reset token
+func (r *UserRepository) UpdatePasswordResetToken(
+	ctx context.Context,
+	userID uuid.UUID,
+	token *string,
+	expiresAt *time.Time,
+) error {
+	stmt := `
+		UPDATE users
+		SET 
+			password_reset_token = @token,
+			password_reset_expires_at = @expires_at,
+			updated_at = NOW()
+		WHERE id = @id
+	`
+
+	_, err := r.db.Exec(ctx, stmt, pgx.NamedArgs{
+		"id":         userID,
+		"token":      token,
+		"expires_at": expiresAt,
+	})
+	return err
+}
+
+// GetByVerificationToken finds a user by email verification token
+func (r *UserRepository) GetByVerificationToken(ctx context.Context, token string) (*user.User, error) {
+	stmt := `
+		SELECT
+			*
+		FROM 
+			users
+		WHERE
+			email_verification_token = @token
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"token": token,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+// GetByPasswordResetToken finds a user by password reset token
+func (r *UserRepository) GetByPasswordResetToken(ctx context.Context, token string) (*user.User, error) {
+	stmt := `
+		SELECT
+			*
+		FROM 
+			users
+		WHERE
+			password_reset_token = @token
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"token": token,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+// UpdateLastLogin updates the last login timestamp
+func (r *UserRepository) UpdateLastLogin(ctx context.Context, userID uuid.UUID) error {
+	stmt := `
+		UPDATE users
+		SET 
+			last_login_at = NOW(),
+			updated_at = NOW()
+		WHERE id = @id
+	`
+
+	_, err := r.db.Exec(ctx, stmt, pgx.NamedArgs{
+		"id": userID,
+	})
+	return err
+}
+
+// CreateOAuthUser creates a user from OAuth provider
+func (r *UserRepository) CreateOAuthUser(
+	ctx context.Context,
+	name, email, provider, providerID string,
+) (*user.User, error) {
+	stmt := `
+		INSERT INTO 
+			users (
+				name,
+				email,
+				oauth_provider,
+				oauth_provider_id,
+				email_verified
+			)
+		VALUES 
+			(
+				@name,
+				@email,
+				@provider,
+				@provider_id,
+				true
+			)
+		RETURNING
+			*
+	`
+
+	rows, err := r.db.Query(ctx, stmt, pgx.NamedArgs{
+		"name":         name,
+		"email":        email,
+		"provider":     provider,
+		"provider_id":  providerID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
 }

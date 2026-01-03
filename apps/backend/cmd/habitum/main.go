@@ -26,7 +26,7 @@ func main() {
 	}
 
 	repositories := repository.NewRepositories(srv.DB.Pool)
-	services := service.NewServices(repositories)
+	services := service.NewServices(repositories, cfg, log)
 	handlers := handler.NewHandlers(services)
 	router := router.NewRouter(srv.Logger, handlers)
 

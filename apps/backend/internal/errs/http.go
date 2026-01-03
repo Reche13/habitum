@@ -64,3 +64,11 @@ func NewValidationError(fields []FieldError) *HTTPError {
 		Fields:  fields,
 	}
 }
+
+func NewConflictError(message string) *HTTPError {
+	return &HTTPError{
+		Code:    MakeUpperCaseWithUnderscores(http.StatusText(http.StatusConflict)),
+		Message: message,
+		Status:  http.StatusConflict,
+	}
+}

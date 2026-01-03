@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
@@ -18,9 +19,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  
   return (
     <html lang="en">
       <body className={`${poppins.className} antialiased`}>
+        {googleClientId && (
+          <Script
+            src="https://accounts.google.com/gsi/client"
+            strategy="afterInteractive"
+          />
+        )}
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

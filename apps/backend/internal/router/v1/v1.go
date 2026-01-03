@@ -6,6 +6,9 @@ import (
 )
 
 func RegisterAPIV1Routes(api *echo.Group, h *handler.Handlers) {
+	auth := api.Group("/auth")
+	registerAuthRoutes(auth, h)
+	
 	users := api.Group("/users")
 	registerUserRoutes(users, h)
 	

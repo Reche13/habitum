@@ -4,46 +4,45 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Lock, Target } from "lucide-react";
+import { Loader2, Mail, Lock, User, Target } from "lucide-react";
 import Link from "next/link";
-import { useLogin, useTestAccountLogin } from "@/lib/hooks";
+import { useSignup } from "@/lib/hooks";
 import { getErrorMessage } from "@/lib/api/client";
 import { GoogleAuthButton } from "@/components/auth/google-auth-button";
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const login = useLogin();
-  const testAccountLogin = useTestAccountLogin();
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const signup = useSignup();
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!email || !password) {
+    if (!name || !email || !password || !confirmPassword) {
       setError("Please fill in all fields");
       return;
     }
 
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     try {
-      await login.mutateAsync({ email, password });
+      await signup.mutateAsync({ name, email, password });
     } catch (err: any) {
       setError(getErrorMessage(err));
     }
   };
-
-  const handleTestAccount = async () => {
-    setError("");
-    try {
-      await testAccountLogin.mutateAsync();
-    } catch (err: any) {
-      setError(getErrorMessage(err));
-    }
-  };
-
-  const isLoading = login.isPending || testAccountLogin.isPending;
 
   return (
     <div className="min-h-screen flex">
@@ -55,13 +54,13 @@ export default function LoginPage() {
           </div>
           <h1 className="text-4xl font-bold">Habitum</h1>
           <p className="text-lg text-muted-foreground">
-            Build better habits, one day at a time. Track your progress and
-            achieve your goals with our simple, powerful habit tracker.
+            Start your journey to better habits today. Sign up and begin tracking
+            your progress.
           </p>
         </div>
       </div>
 
-      {/* Right side - Login Form */}
+      {/* Right side - Signup Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile Logo */}
@@ -74,19 +73,36 @@ export default function LoginPage() {
 
           {/* Form Header */}
           <div className="space-y-2">
-            <h2 className="text-3xl font-semibold">Welcome back</h2>
+            <h2 className="text-3xl font-semibold">Create an account</h2>
             <p className="text-muted-foreground">
-              Sign in to continue tracking your habits
+              Sign up to start tracking your habits
             </p>
           </div>
 
-          {/* Login Form */}
+          {/* Signup Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="pl-10"
+                  disabled={signup.isPending}
+                  required
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -99,66 +115,60 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
-                  disabled={isLoading}
+                  disabled={signup.isPending}
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="At least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
-                  disabled={isLoading}
+                  disabled={signup.isPending}
                   required
+                  minLength={8}
                 />
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="remember"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
-                disabled={isLoading}
-              />
-              <Label
-                htmlFor="remember"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Remember me
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10"
+                  disabled={signup.isPending}
+                  required
+                  minLength={8}
+                />
+              </div>
             </div>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading}
+              disabled={signup.isPending}
             >
-              {isLoading ? (
+              {signup.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Signing in...
+                  Creating account...
                 </>
               ) : (
-                "Sign in"
+                "Sign up"
               )}
             </Button>
           </form>
@@ -178,29 +188,11 @@ export default function LoginPage() {
           {/* Google OAuth Button */}
           <GoogleAuthButton />
 
-          {/* Test Account Button */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={handleTestAccount}
-            disabled={isLoading}
-          >
-            {testAccountLogin.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Logging in...
-              </>
-            ) : (
-              "Try Demo Account"
-            )}
-          </Button>
-
-          {/* Sign up link */}
+          {/* Sign in link */}
           <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="text-primary hover:underline font-medium">
+              Sign in
             </Link>
           </div>
         </div>
@@ -208,3 +200,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

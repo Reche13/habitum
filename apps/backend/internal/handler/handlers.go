@@ -10,6 +10,7 @@ type Handlers struct {
 	Analytics *AnalyticsHandler
 	Calendar *CalendarHandler
 	Dashboard *DashboardHandler
+	Auth *AuthHandler
 }
 
 func NewHandlers(services *service.Services) *Handlers {
@@ -21,5 +22,6 @@ func NewHandlers(services *service.Services) *Handlers {
 		Analytics: NewAnalyticsHandler(services.Analytics),
 		Calendar: NewCalendarHandler(services.Calendar),
 		Dashboard: NewDashboardHandler(services.Dashboard),
+		Auth: NewAuthHandler(services.Auth),
 	}
 }
