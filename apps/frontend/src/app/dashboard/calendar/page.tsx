@@ -18,12 +18,8 @@ import {
   endOfWeek,
   startOfYear,
   endOfYear,
-  getWeek,
   getISOWeek,
-  getYear,
-  isSameWeek,
   isSameYear,
-  startOfDay,
 } from "date-fns";
 import {
   ChevronLeft,
@@ -31,7 +27,6 @@ import {
   Calendar as CalendarIcon,
   Filter,
   CheckCircle2,
-  Loader2,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,7 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useHabits, useCalendarMonth, useCalendarWeek, useCalendarYear } from "@/lib/hooks";
+import {
+  useHabits,
+  useCalendarMonth,
+  useCalendarWeek,
+  useCalendarYear,
+} from "@/lib/hooks";
 import { mapHabitResponsesToHabits } from "@/lib/api/mappers";
 
 type ViewMode = "month" | "week" | "year";
@@ -53,14 +53,14 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedHabitIds, setSelectedHabitIds] = useState<string[]>([]);
 
-  // Get all habits for filter dropdown
   const { data: habitsData } = useHabits();
-  const habits = habitsData?.data ? mapHabitResponsesToHabits(habitsData.data) : [];
-  
-  // Initialize selected habits to all habits if empty
-  const effectiveHabitIds = selectedHabitIds.length > 0 ? selectedHabitIds : undefined;
+  const habits = habitsData?.data
+    ? mapHabitResponsesToHabits(habitsData.data)
+    : [];
 
-  // Get calendar data based on view mode
+  const effectiveHabitIds =
+    selectedHabitIds.length > 0 ? selectedHabitIds : undefined;
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
   const week = getISOWeek(currentDate);
@@ -80,9 +80,6 @@ export default function CalendarPage() {
     effectiveHabitIds
   );
 
-  const isLoading = monthLoading || weekLoading || yearLoading;
-
-  // Calculate days based on view mode
   const calendarDays = useMemo(() => {
     if (viewMode === "week") {
       const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -102,9 +99,6 @@ export default function CalendarPage() {
     }
   }, [currentDate, viewMode]);
 
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-
   const toggleHabit = (habitId: string) => {
     setSelectedHabitIds((prev) => {
       if (prev.includes(habitId)) {
@@ -116,7 +110,12 @@ export default function CalendarPage() {
 
   const getCompletionsForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    let completions: Array<{ id: string; name: string; color?: string; icon?: string }> = [];
+    let completions: Array<{
+      id: string;
+      name: string;
+      color?: string;
+      icon?: string;
+    }> = [];
 
     if (viewMode === "month" && monthData?.days) {
       const dayData = monthData.days.find((d) => d.date === dateStr);
@@ -147,7 +146,6 @@ export default function CalendarPage() {
     } else if (viewMode === "year" && yearData?.heatmap) {
       const dayData = yearData.heatmap.find((d) => d.date === dateStr);
       if (dayData && dayData.completionRate > 0) {
-        // For year view, we don't have individual habit info, just completion rate
         completions = [];
       }
     }
@@ -157,7 +155,7 @@ export default function CalendarPage() {
 
   const getCompletionRateForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    
+
     if (viewMode === "month" && monthData?.days) {
       const dayData = monthData.days.find((d) => d.date === dateStr);
       return dayData?.completionRate || 0;
@@ -168,7 +166,7 @@ export default function CalendarPage() {
       const dayData = yearData.heatmap.find((d) => d.date === dateStr);
       return dayData?.completionRate || 0;
     }
-    
+
     return 0;
   };
 
@@ -251,10 +249,10 @@ export default function CalendarPage() {
               value={viewMode}
               onValueChange={(v) => setViewMode(v as ViewMode)}
             >
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-30">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="border border-zinc-200">
                 <SelectItem value="month">Month</SelectItem>
                 <SelectItem value="week">Week</SelectItem>
                 <SelectItem value="year">Year</SelectItem>
@@ -264,29 +262,33 @@ export default function CalendarPage() {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mb-6 bg-background rounded-lg border p-4">
+        <div className="flex items-center justify-between mb-6 bg-background rounded-lg border border-zinc-200 shadow-xs p-4">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               size="icon"
               onClick={() => navigateDate("prev")}
-              className="h-9 w-9"
+              className="h-9 w-9 border-zinc-200 shadow-sm cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-xl font-bold min-w-[200px] text-center">
+            <h2 className="text-xl font-medium min-w-50 text-center">
               {getDateLabel()}
             </h2>
             <Button
               variant="outline"
               size="icon"
               onClick={() => navigateDate("next")}
-              className="h-9 w-9"
+              className="h-9 w-9 border-zinc-200 shadow-sm cursor-pointer"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button variant="default" onClick={goToToday} className="font-medium">
+          <Button
+            variant="default"
+            onClick={goToToday}
+            className="font-medium cursor-pointer"
+          >
             Today
           </Button>
         </div>
@@ -295,7 +297,7 @@ export default function CalendarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendar Grid */}
         <div className="lg:col-span-3">
-          <div className="rounded-xl border-2 bg-background p-6 shadow-sm">
+          <div className="rounded-xl border-2 border-zinc-200 bg-background p-6 shadow-sm">
             {viewMode === "year" ? (
               <YearHeatmapView
                 calendarDays={calendarDays}
@@ -306,7 +308,6 @@ export default function CalendarPage() {
             ) : viewMode === "week" ? (
               <WeekView
                 calendarDays={calendarDays}
-                currentDate={currentDate}
                 getCompletionsForDate={getCompletionsForDate}
                 getCompletionRateForDate={getCompletionRateForDate}
               />
@@ -333,7 +334,10 @@ export default function CalendarPage() {
                     const isToday = isSameDay(day, new Date());
                     const completions = getCompletionsForDate(day);
                     const completionRate = getCompletionRateForDate(day);
-                    const totalHabits = selectedHabitIds.length > 0 ? selectedHabitIds.length : habits.length;
+                    const totalHabits =
+                      selectedHabitIds.length > 0
+                        ? selectedHabitIds.length
+                        : habits.length;
                     const hasManyHabits = totalHabits > 10;
 
                     return (
@@ -343,12 +347,13 @@ export default function CalendarPage() {
                           "aspect-square rounded-xl border-2 p-3 transition-all cursor-pointer hover:shadow-md hover:scale-105",
                           !isCurrentMonth && "opacity-30 border-muted",
                           isCurrentMonth && "border-border",
-                          isToday && "ring-2 ring-primary ring-offset-1 bg-primary/5",
-                          completions.length > 0 && !isToday && "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                          isToday &&
+                            "ring-2 ring-primary ring-offset-1 bg-primary/5",
+                          completions.length > 0 &&
+                            !isToday &&
+                            "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
                         )}
-                        onClick={() => {
-                          // Could add a modal or side panel here for date details
-                        }}
+                        onClick={() => {}}
                       >
                         <div className="flex flex-col h-full">
                           <span
@@ -366,7 +371,7 @@ export default function CalendarPage() {
                               <div className="flex-1 flex items-center justify-center">
                                 <div className="text-center">
                                   <div className="text-lg font-semibold">
-                                    {completionRate}%
+                                    {Math.round(completionRate)}%
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     {completions.length}/{totalHabits}
@@ -427,7 +432,7 @@ export default function CalendarPage() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Statistics */}
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border border-zinc-200 bg-background p-4 shadow-xs">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
               {viewMode === "week"
@@ -465,7 +470,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Habit Filter */}
-          <div className="rounded-lg border bg-background p-4">
+          <div className="rounded-lg border border-zinc-200 shadow-xs bg-background p-4">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Habits
@@ -478,9 +483,12 @@ export default function CalendarPage() {
                 >
                   <input
                     type="checkbox"
-                    checked={selectedHabitIds.length === 0 || selectedHabitIds.includes(habit.id)}
+                    checked={
+                      selectedHabitIds.length === 0 ||
+                      selectedHabitIds.includes(habit.id)
+                    }
                     onChange={() => toggleHabit(habit.id)}
-                    className="rounded border-gray-300"
+                    className="rounded border-gray-300 accent-foreground"
                   />
                   <div
                     className="w-4 h-4 rounded-full shrink-0"
@@ -496,7 +504,7 @@ export default function CalendarPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="flex-1 border-zinc-200 cursor-pointer"
                 onClick={() => setSelectedHabitIds([])}
               >
                 Show All
@@ -504,8 +512,8 @@ export default function CalendarPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1"
-                onClick={() => setSelectedHabitIds(habits.map(h => h.id))}
+                className="flex-1 border-zinc-200 cursor-pointer"
+                onClick={() => setSelectedHabitIds(habits.map((h) => h.id))}
               >
                 Clear
               </Button>
@@ -520,13 +528,13 @@ export default function CalendarPage() {
 // Week View Component
 function WeekView({
   calendarDays,
-  currentDate,
   getCompletionsForDate,
   getCompletionRateForDate,
 }: {
   calendarDays: Date[];
-  currentDate: Date;
-  getCompletionsForDate: (date: Date) => Array<{ id: string; name: string; color?: string; icon?: string }>;
+  getCompletionsForDate: (
+    date: Date
+  ) => Array<{ id: string; name: string; color?: string; icon?: string }>;
   getCompletionRateForDate: (date: Date) => number;
 }) {
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
@@ -557,7 +565,7 @@ function WeekView({
             <div
               key={dayStr}
               className={cn(
-                "rounded-lg border p-3 flex flex-col h-[500px]",
+                "rounded-lg border border-zinc-200 shadow-xs p-3 flex flex-col h-125",
                 isToday && "ring-2 ring-primary bg-primary/5"
               )}
             >
@@ -583,7 +591,9 @@ function WeekView({
 
               {/* Completion Summary */}
               <div className="text-center mb-3">
-                <div className="text-2xl font-bold">{completionRate}%</div>
+                <div className="text-2xl font-bold">
+                  {Math.round(completionRate)}%
+                </div>
                 <div className="text-xs text-muted-foreground">
                   {completions.length}
                 </div>
@@ -602,9 +612,8 @@ function WeekView({
               {/* Habits List - Fixed height scrollable area */}
               <div className="flex-1 flex flex-col min-h-0">
                 {showCompact ? (
-                  // Compact view - show first 5, then button
                   <>
-                    <div className="space-y-1 overflow-hidden flex-shrink-0">
+                    <div className="space-y-1 overflow-hidden shrink-0">
                       {completions.slice(0, 5).map((habit) => {
                         return (
                           <div
@@ -616,7 +625,9 @@ function WeekView({
                           >
                             <div
                               className="w-1.5 h-1.5 rounded-full shrink-0"
-                              style={{ backgroundColor: habit.color || "#6366f1" }}
+                              style={{
+                                backgroundColor: habit.color || "#6366f1",
+                              }}
                             />
                             <span className="truncate flex-1 text-[10px]">
                               {habit.name}
@@ -632,7 +643,7 @@ function WeekView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full mt-2 text-xs h-7 flex-shrink-0"
+                        className="w-full mt-2 text-xs h-7 shrink-0"
                         onClick={() => toggleDay(dayStr)}
                       >
                         +{completions.length - 5} more
@@ -653,7 +664,9 @@ function WeekView({
                         >
                           <div
                             className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: habit.color || "#6366f1" }}
+                            style={{
+                              backgroundColor: habit.color || "#6366f1",
+                            }}
                           />
                           <span className="truncate flex-1">{habit.name}</span>
                           <span className="text-green-600 dark:text-green-400 shrink-0">
@@ -692,21 +705,19 @@ function YearHeatmapView({
 }: {
   calendarDays: Date[];
   currentDate: Date;
-  getCompletionsForDate: (date: Date) => Array<{ id: string; name: string; color?: string; icon?: string }>;
+  getCompletionsForDate: (
+    date: Date
+  ) => Array<{ id: string; name: string; color?: string; icon?: string }>;
   getCompletionRateForDate: (date: Date) => number;
 }) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Group days by week - weeks start on Sunday (0)
-  // First, find the first day of the year and pad to Sunday if needed
   const firstDay = calendarDays[0];
   const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday
-  
-  // Group days into weeks
+
   const weeks: Date[][] = [];
   let currentWeek: Date[] = [];
-  
-  // Pad the first week if it doesn't start on Sunday
+
   if (firstDayOfWeek !== 0) {
     for (let i = 0; i < firstDayOfWeek; i++) {
       currentWeek.push(new Date(0)); // Placeholder for empty days
@@ -715,21 +726,18 @@ function YearHeatmapView({
 
   calendarDays.forEach((day) => {
     const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-    
-    // If it's Sunday and we have a previous week, save it
+
     if (dayOfWeek === 0 && currentWeek.length > 0) {
-      // Fill remaining days if week is incomplete
       while (currentWeek.length < 7) {
         currentWeek.push(new Date(0));
       }
       weeks.push(currentWeek);
       currentWeek = [];
     }
-    
+
     currentWeek.push(day);
   });
 
-  // Add the last week if it exists, and pad it
   if (currentWeek.length > 0) {
     while (currentWeek.length < 7) {
       currentWeek.push(new Date(0));
@@ -737,13 +745,11 @@ function YearHeatmapView({
     weeks.push(currentWeek);
   }
 
-  // Get month labels - show month name for the first week of each month
   const monthLabels: { weekIdx: number; month: string }[] = [];
   let lastMonth = -1;
 
   weeks.forEach((week, weekIdx) => {
-    // Find the first real day in the week (not placeholder)
-    const firstRealDay = week.find(d => d.getTime() !== 0);
+    const firstRealDay = week.find((d) => d.getTime() !== 0);
     if (firstRealDay) {
       const month = firstRealDay.getMonth();
       if (month !== lastMonth) {
@@ -780,14 +786,14 @@ function YearHeatmapView({
     <div className="space-y-6">
       <div className="space-y-4 overflow-x-auto pb-4">
         {/* Month Labels */}
-        <div className="flex gap-1.5 mb-3 min-w-fit px-1">
-          <div className="w-14 shrink-0"></div>
+        <div className="flex gap-1 mb-3 min-w-fit px-1">
+          <div className="w-10.25 shrink-0"></div>
           {weeks.map((week, weekIdx) => {
             const monthLabel = monthLabels.find((m) => m.weekIdx === weekIdx);
             return (
               <div
                 key={weekIdx}
-                className="text-xs font-medium text-muted-foreground text-center w-[11px] shrink-0"
+                className="text-xs font-medium text-muted-foreground text-center w-2.75 shrink-0"
               >
                 {monthLabel ? monthLabel.month : ""}
               </div>
@@ -796,47 +802,59 @@ function YearHeatmapView({
         </div>
 
         {/* Day Labels and Heatmap */}
-        <div className="flex gap-1.5 min-w-fit px-1">
+        <div className="flex gap-1 min-w-fit px-1">
           {/* Day labels */}
-          <div className="space-y-1.5 pr-3 shrink-0">
-            {["", "Mon", "", "Wed", "", "Fri", ""].map((label, idx) => (
-              <div
-                key={idx}
-                className="text-xs text-muted-foreground h-[11px] flex items-center font-medium"
-              >
-                {label}
-              </div>
-            ))}
+          <div className="space-y-1 pr-3 shrink-0">
+            {["Sun", "Mon", "Tue", "Wed", "Thurs", "Fri", "Sat"].map(
+              (label, idx) => (
+                <div
+                  key={idx}
+                  className="text-[10px] text-muted-foreground/60 h-2.75 flex items-center font-medium"
+                >
+                  {label}
+                </div>
+              )
+            )}
           </div>
 
           {/* Heatmap cells */}
-          <div className="flex gap-1.5">
+          <div className="flex gap-1">
             {weeks.map((week, weekIdx) => (
-              <div key={weekIdx} className="flex flex-col gap-1.5 shrink-0">
+              <div key={weekIdx} className="flex flex-col gap-1 shrink-0">
                 {week.map((day, dayIdx) => {
                   // Skip placeholder days
                   if (day.getTime() === 0) {
-                    return <div key={`${weekIdx}-${dayIdx}`} className="w-[11px] h-[11px]" />;
+                    return (
+                      <div
+                        key={`${weekIdx}-${dayIdx}`}
+                        className="w-2.75 h-2.75"
+                      />
+                    );
                   }
 
                   const completionRate = getCompletionRateForDate(day);
                   const intensity = getIntensity(completionRate);
                   const isToday = isSameDay(day, new Date());
                   const isCurrentYear = isSameYear(day, currentDate);
-                  const isSelected = selectedDate && isSameDay(day, selectedDate);
+                  const isSelected =
+                    selectedDate && isSameDay(day, selectedDate);
 
                   return (
                     <div
                       key={`${weekIdx}-${dayIdx}`}
                       onClick={() => setSelectedDate(day)}
                       className={cn(
-                        "w-[11px] h-[11px] rounded-sm border transition-all hover:scale-110 hover:z-10 relative cursor-pointer",
+                        "w-2.75 h-2.75 rounded-xs border transition-all hover:scale-110 hover:z-10 relative cursor-pointer",
                         getColor(intensity),
                         !isCurrentYear && "opacity-20",
                         isToday && "ring-2 ring-primary ring-offset-1",
-                        isSelected && "ring-2 ring-blue-500 ring-offset-1 shadow-lg"
+                        isSelected &&
+                          "ring-2 ring-blue-500 ring-offset-1 shadow-lg"
                       )}
-                      title={`${format(day, "MMM d, yyyy")}: ${completionRate}% completion`}
+                      title={`${format(
+                        day,
+                        "MMM d, yyyy"
+                      )}: ${completionRate}% completion`}
                     />
                   );
                 })}
@@ -852,8 +870,21 @@ function YearHeatmapView({
             {[0, 1, 2, 3, 4].map((intensity) => (
               <div
                 key={intensity}
-                className={cn("w-[11px] h-[11px] rounded-sm border", getColor(intensity))}
-                title={`${intensity === 0 ? "No" : intensity === 1 ? "Low" : intensity === 2 ? "Medium" : intensity === 3 ? "High" : "Very High"} activity`}
+                className={cn(
+                  "w-2.75 h-2.75 rounded-sm border",
+                  getColor(intensity)
+                )}
+                title={`${
+                  intensity === 0
+                    ? "No"
+                    : intensity === 1
+                    ? "Low"
+                    : intensity === 2
+                    ? "Medium"
+                    : intensity === 3
+                    ? "High"
+                    : "Very High"
+                } activity`}
               />
             ))}
           </div>
@@ -863,7 +894,7 @@ function YearHeatmapView({
 
       {/* Selected Date Details */}
       {selectedDate && (
-        <div className="rounded-xl border-2 bg-background p-6 mt-6 shadow-lg">
+        <div className="rounded-xl border-2 border-zinc-200 bg-background p-6 mt-6 shadow-md">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold">
@@ -877,7 +908,7 @@ function YearHeatmapView({
               variant="ghost"
               size="sm"
               onClick={() => setSelectedDate(null)}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 cursor-pointer"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -909,7 +940,9 @@ function YearHeatmapView({
                         {habit.icon || "🔥"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm">{habit.name}</div>
+                        <div className="font-semibold text-sm">
+                          {habit.name}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 shrink-0">
                         <CheckCircle2 className="h-5 w-5" />
